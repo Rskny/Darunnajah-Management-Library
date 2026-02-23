@@ -1,18 +1,13 @@
 import React, { useState } from "react";
 import SettingsModal from "./SettingsModal";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
-interface HeaderProps {
-  user?: {
-    name?: string;
-    username?: string;
-    email?: string;
-  };
-  onLogout?: () => void;
-}
-
-const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
-
+const Header: React.FC = () => {
   const [open, setOpen] = useState(false);
+
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const safeUser = user ?? {
     name: "Admin",
@@ -20,10 +15,15 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
     email: "admin@mail.com"
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate("/"); // redirect ke landing/login
+  };
+
   return (
     <header className="w-full flex justify-between items-center px-6 py-4 bg-white shadow-sm border-b">
 
-      {/* LEFT */}
+      {/* TITLE */}
       <h1 className="text-lg font-bold text-slate-800">
         Dashboard Perpustakaan
       </h1>
@@ -47,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
 
         {/* LOGOUT */}
         <button
-          onClick={() => onLogout?.()}
+          onClick={handleLogout}
           className="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition text-sm font-semibold"
         >
           Logout
@@ -59,7 +59,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
         <SettingsModal
           user={safeUser}
           onClose={() => setOpen(false)}
-          onUpdate={(data) => console.log("update", data)}
+          onUpdate={() => {}}
         />
       )}
     </header>
