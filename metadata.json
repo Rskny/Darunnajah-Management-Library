@@ -1,0 +1,7 @@
+{
+  "name": "Darunnajah Library Management System",
+  "description": "A modern, user-friendly library system for Darunnajah featuring book lending, returns, and digital catalog management.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
