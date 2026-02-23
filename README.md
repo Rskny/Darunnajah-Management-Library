@@ -2,7 +2,7 @@
 
 Sistem Manajemen Perpustakaan Darunnajah adalah aplikasi berbasis web yang dibangun menggunakan **React (Vite)**, **TypeScript**, dan **Dexie.js** (untuk IndexedDB lokal). Aplikasi ini memungkinkan staf perpustakaan untuk mengelola buku, anggota, peminjaman, kunjungan tamu, dan laporan, tanpa memerlukan server backend terpisah berkat penggunaan penyimpanan lokal browser.
 
-## 🖥️ Antarmuka Pengguna (UI)
+## Antarmuka Pengguna (UI)
 
 Sistem ini memiliki beberapa halaman (UI) utama sebagai berikut:
 
@@ -15,7 +15,7 @@ Sistem ini memiliki beberapa halaman (UI) utama sebagai berikut:
 7. **Peminjaman & Transaksi (`Peminjaman.tsx` & `RiwayatTransaksi.tsx`)** - UI untuk melayani peminjaman dan pengembalian buku, serta melihat riwayat status seluruh proses transaksi dalam perpustakaan.
 8. **Laporan (`Reports.tsx`)** - Penampilan laporan dan analisis kegiatan perpustakaan atau pencetakan/ekspor data.
 
-## 🔌 Detail API (Application Programming Interface)
+## Detail API (Application Programming Interface)
 
 Sistem menggunakan API interaksi memori lokal melalui `Dexie.js` yang didefinisikan dalam `api.ts`. Berikut kebutuhan/fungsionalitas fungsinya:
 
@@ -51,7 +51,7 @@ Sistem menggunakan API interaksi memori lokal melalui `Dexie.js` yang didefinisi
 
 ---
 
-## 🚀 Tata Cara Setup & Instalasi
+## Tata Cara Setup & Instalasi
 
 Ikuti langkah-langkah di bawah untuk mengatur dan menjalankan sistem secara lokal:
 
