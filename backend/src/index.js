@@ -4,13 +4,12 @@ const cors = require('cors');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
-// Import Rutings
-const authRoutes = require('./routes/auth');
-const booksRoutes = require('./routes/books');
-const membersRoutes = require('./routes/members');
-const transactionsRoutes = require('./routes/transactions');
-const visitsRoutes = require('./routes/visits');
-const systemRoutes = require('./routes/system');
+const authRoutes = require('./modules/auth');
+const booksRoutes = require('./modules/books');
+const membersRoutes = require('./modules/members');
+const transactionsRoutes = require('./modules/transactions');
+const visitsRoutes = require('./modules/visits');
+const systemRoutes = require('./modules/system');
 
 const app = express();
 app.use(cors());
@@ -38,7 +37,7 @@ const swaggerOptions = {
             bearerAuth: []
         }],
     },
-    apis: ['./src/routes/*.js'], // Ambil semua komentar anotasi Swagger dari routes
+    apis: ['./src/modules/*.js'], // Ambil semua komentar anotasi Swagger dari modules
 };
 
 const specs = swaggerJsdoc(swaggerOptions);
