@@ -90,6 +90,18 @@ router.post('/register', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/auth/admins:
+ *   get:
+ *     summary: Mendapatkan daftar semua admin
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Berhasil mendapatkan data admin
+ */
 // Get List Semua Admin
 router.get('/admins', authenticateToken, async (req, res) => {
     try {
@@ -100,6 +112,34 @@ router.get('/admins', authenticateToken, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/auth/admins/{id}:
+ *   put:
+ *     summary: Memperbarui data admin
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username: { type: string }
+ *               email: { type: string }
+ *               password: { type: string }
+ *     responses:
+ *       200:
+ *         description: Profil admin berhasil diperbarui
+ */
 // Update data Admin
 router.put('/admins/:id', authenticateToken, async (req, res) => {
     try {

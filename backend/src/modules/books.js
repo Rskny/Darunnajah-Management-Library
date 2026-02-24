@@ -3,6 +3,18 @@ const router = express.Router();
 const db = require('../db');
 const authenticateToken = require('../authMiddleware');
 
+/**
+ * @swagger
+ * /api/books:
+ *   get:
+ *     summary: Mendapatkan semua buku
+ *     tags: [Books]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Berhasil mendapatkan daftar buku
+ */
 // Get semua buku
 router.get('/', authenticateToken, async (req, res) => {
     try {
@@ -13,6 +25,29 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/books:
+ *   post:
+ *     summary: Menambah buku baru
+ *     tags: [Books]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title: { type: string }
+ *               author: { type: string }
+ *               category: { type: string }
+ *               available: { type: boolean }
+ *     responses:
+ *       201:
+ *         description: Buku berhasil ditambahkan
+ */
 // Tambah buku baru
 router.post('/', authenticateToken, async (req, res) => {
     try {
@@ -24,6 +59,35 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/books/{id}:
+ *   put:
+ *     summary: Memperbarui data buku
+ *     tags: [Books]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title: { type: string }
+ *               author: { type: string }
+ *               category: { type: string }
+ *               available: { type: boolean }
+ *     responses:
+ *       200:
+ *         description: Buku berhasil diperbarui
+ */
 // Update data buku
 router.put('/:id', authenticateToken, async (req, res) => {
     try {
@@ -36,6 +100,24 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/books/{id}:
+ *   delete:
+ *     summary: Menghapus buku
+ *     tags: [Books]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Buku berhasil dihapus
+ */
 // Hapus buku
 router.delete('/:id', authenticateToken, async (req, res) => {
     try {

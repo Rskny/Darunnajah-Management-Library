@@ -3,6 +3,18 @@ const router = express.Router();
 const db = require('../db');
 const authenticateToken = require('../authMiddleware');
 
+/**
+ * @swagger
+ * /api/system/backup:
+ *   get:
+ *     summary: Mendapatkan data backup untuk semua entitas (dalam format JSON)
+ *     tags: [System]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Data backup dari sistem
+ */
 // Endpoint Sistem Backup
 router.get('/backup', authenticateToken, async (req, res) => {
     try {

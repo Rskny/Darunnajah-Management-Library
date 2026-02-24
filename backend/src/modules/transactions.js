@@ -3,6 +3,18 @@ const router = express.Router();
 const db = require('../db');
 const authenticateToken = require('../authMiddleware');
 
+/**
+ * @swagger
+ * /api/transactions:
+ *   get:
+ *     summary: Mendapatkan semua transaksi
+ *     tags: [Transactions]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Berhasil mendapatkan daftar transaksi
+ */
 // Get semua transaksi
 router.get('/', authenticateToken, async (req, res) => {
     try {
@@ -13,6 +25,29 @@ router.get('/', authenticateToken, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/transactions:
+ *   post:
+ *     summary: Menambah transaksi peminjaman baru
+ *     tags: [Transactions]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               bookId: { type: integer }
+ *               studentName: { type: string }
+ *               status: { type: string }
+ *               borrowDate: { type: string, format: date-time }
+ *     responses:
+ *       201:
+ *         description: Transaksi berhasil dicatat
+ */
 // Tambah transaksi peminjaman baru
 router.post('/', authenticateToken, async (req, res) => {
     try {
@@ -30,6 +65,32 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/transactions/{id}:
+ *   put:
+ *     summary: Memperbarui status transaksi (misal pengembalian)
+ *     tags: [Transactions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status: { type: string }
+ *     responses:
+ *       200:
+ *         description: Status transaksi berhasil diperbarui
+ */
 // Update status transaksi (misal: pengembalian)
 router.put('/:id', authenticateToken, async (req, res) => {
     try {
