@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import apiClient from "../apiClient";
 import StatsOverview from "../components/StatsOverview";
 import {
   BarChart,
@@ -32,49 +33,24 @@ export default function Dashboard() {
 
   const [monthlyData, setMonthlyData] = useState<MonthlyVisits[]>([]);
 
-    useEffect(() => {
-  const loadData = () => {
-    const stored = localStorage.getItem("visits");
-    const visits = stored ? JSON.parse(stored) : [];
-
-    const months = [
-      "Jan","Feb","Mar","Apr","Mei","Jun",
-      "Jul","Agu","Sep","Okt","Nov","Des"
-    ];
-
-    const monthly = months.map(m => ({ month: m, visits: 0 }));
-
-    visits.forEach((v:any)=>{
-      const d = new Date(v.date);
-      if(!isNaN(d.getTime())){
-        monthly[d.getMonth()].visits++;
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const response = await apiClient.get('/dashboard');
+        setStats(response.data.stats);
+        setMonthlyData(response.data.monthlyData);
+      } catch (err) {
+        console.error("Gagal mendapatkan data dashboard:", err);
       }
-    });
+    };
 
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate()-7);
+    loadData();
 
-    const weeklyVisits = visits.filter((v:any)=>
-      new Date(v.date) >= oneWeekAgo
-    ).length;
+    // reload data setiap page difokuskan
+    window.addEventListener("focus", loadData);
+    return () => window.removeEventListener("focus", loadData);
 
-    setStats({
-      weeklyVisits,
-      activeLoans: 14,
-      overdueCount: 3,
-      totalBooks: 980,
-    });
-
-    setMonthlyData(monthly);
-  };
-
-  loadData();
-
-  // reload data setiap page difokuskan
-  window.addEventListener("focus", loadData);
-  return ()=> window.removeEventListener("focus", loadData);
-
-}, []);
+  }, []);
 
 
   return (
@@ -102,7 +78,7 @@ export default function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
               <XAxis dataKey="month" />
               <YAxis allowDecimals={false} />
-              
+
               <Tooltip
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {

@@ -10,6 +10,7 @@ const membersRoutes = require('./modules/members');
 const transactionsRoutes = require('./modules/transactions');
 const visitsRoutes = require('./modules/visits');
 const systemRoutes = require('./modules/system');
+const dashboardRoutes = require('./modules/dashboard');
 
 const app = express();
 app.use(cors());
@@ -52,6 +53,7 @@ app.use('/api/members', membersRoutes);
 app.use('/api/transactions', transactionsRoutes);
 app.use('/api/visits', visitsRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Jalankan Server
 const PORT = process.env.PORT || 5000;
