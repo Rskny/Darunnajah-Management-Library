@@ -13,6 +13,21 @@ interface Visit {
   time: string;
 }
 
+/* ================= HELPER ================= */
+
+// tanggal hari ini jam 00:00
+const getStartOfToday = () => {
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  return d;
+};
+
+// cek apakah tanggal masih hari ini
+const isToday = (dateString:string) => {
+  const d = new Date(dateString);
+  return d >= getStartOfToday();
+};
+
 const Visits: React.FC = () => {
   const { addHistory } = useHistory();
 
@@ -20,51 +35,58 @@ const Visits: React.FC = () => {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
-  const fetchVisits = async () => {
-    try {
-      const res = await apiClient.get('/visits');
-      setVisits(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
+  /* ================= LOAD DATA ================= */
   useEffect(() => {
-    fetchVisits();
+    const saved = JSON.parse(localStorage.getItem("visits") || "[]");
+
+    // hanya ambil kunjungan hari ini
+    const todayVisits = saved.filter((v:Visit)=> isToday(v.date));
+
+    setVisits(todayVisits);
   }, []);
 
-  // TAMBAH VISIT
-  const handleAddVisit = async (data: Omit<Visit, "id" | "date" | "time">) => {
-    try {
-      const now = new Date();
-      await apiClient.post('/visits', {
-        name: data.name,
-        nis: data.chosing === 'Siswa' ? 'N/A' : data.chosing, // Keep the fake NIS logic
-        kelas: data.kelas,
-        chosing: data.chosing,
-        purpose: data.purpose,
-        date: now.toISOString().split('T')[0],
-        time: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-      });
-      fetchVisits();
+  /* ================= SAVE + AUTO CLEAN ================= */
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem("visits") || "[]");
 
-      addHistory({
-        id: Date.now(),
-        date: new Date(),
-        name: data.name,
-        role: data.chosing,
-        activity: "Kunjungan",
-        category: "kunjungan",
-        description: data.purpose,
-      });
+    // gabung data lama + hari ini
+    const merged = [...visits, ...saved.filter((v:Visit)=> !isToday(v.date))];
 
-      setShowModal(false);
-    } catch (err) {
-      console.error(err);
-    }
+    localStorage.setItem("visits", JSON.stringify(merged));
+
+    // trigger dashboard update realtime
+    window.dispatchEvent(new Event("visitsUpdated"));
+
+  }, [visits]);
+
+  /* ================= ADD ================= */
+  const handleAddVisit = (data: Omit<Visit, "id" | "date" | "time">) => {
+    const now = new Date();
+
+    const newVisit: Visit = {
+      id: Date.now(),
+      date: now.toISOString(),
+      time: now.toLocaleTimeString("id-ID"),
+      ...data,
+    };
+
+    setVisits(prev => [newVisit, ...prev]);
+
+    // kirim ke history (untuk dashboard weekly)
+    addHistory({
+      id: Date.now(),
+      date: new Date(),
+      name: data.name,
+      role: data.chosing,
+      activity: "Kunjungan",
+      category: "kunjungan",
+      description: data.purpose,
+    });
+
+    setShowModal(false);
   };
 
-  // CHECKBOX
+  /* ================= CHECKBOX ================= */
   const toggleSelect = (id: number) => {
     setSelectedIds(prev =>
       prev.includes(id)
@@ -81,26 +103,21 @@ const Visits: React.FC = () => {
     }
   };
 
-  // DELETE
-  const deleteSelected = async () => {
-    try {
-      for (const id of selectedIds) {
-        await apiClient.delete(`/visits/${id}`);
-      }
-      fetchVisits();
-      setSelectedIds([]);
-    } catch (err) {
-      console.error(err);
-    }
+  /* ================= DELETE ================= */
+  const deleteSelected = () => {
+    const filtered = visits.filter(v => !selectedIds.includes(v.id));
+    setVisits(filtered);
+    setSelectedIds([]);
   };
 
+  /* ================= RENDER ================= */
   return (
     <div className="p-10">
 
       {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-extrabold text-slate-800">
-          List Kunjungan Perpustakaan
+          Kunjungan Hari Ini
         </h1>
 
         <div className="flex gap-3">
@@ -150,7 +167,7 @@ const Visits: React.FC = () => {
             {visits.length === 0 ? (
               <tr>
                 <td colSpan={7} className="p-6 text-center text-slate-400">
-                  Belum ada data kunjungan
+                  Belum ada kunjungan hari ini
                 </td>
               </tr>
             ) : (
@@ -171,7 +188,9 @@ const Visits: React.FC = () => {
                   <td className="p-4">{v.kelas}</td>
                   <td className="p-4 capitalize">{v.chosing}</td>
                   <td className="p-4">{v.purpose}</td>
-                  <td className="p-4">{v.date}</td>
+                  <td className="p-4">
+                    {new Date(v.date).toLocaleDateString("id-ID")}
+                  </td>
                   <td className="p-4">{v.time}</td>
                 </tr>
               ))
@@ -188,6 +207,7 @@ const Visits: React.FC = () => {
           onSubmit={handleAddVisit}
         />
       )}
+
     </div>
   );
 };
