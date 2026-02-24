@@ -1,83 +1,117 @@
 # Sistem Manajemen Perpustakaan Darunnajah
 
-Sistem Manajemen Perpustakaan Darunnajah adalah aplikasi berbasis web yang dibangun menggunakan **React (Vite)**, **TypeScript**, dan **Dexie.js** (untuk IndexedDB lokal). Aplikasi ini memungkinkan staf perpustakaan untuk mengelola buku, anggota, peminjaman, kunjungan tamu, dan laporan, tanpa memerlukan server backend terpisah berkat penggunaan penyimpanan lokal browser.
-
-## Antarmuka Pengguna (UI)
-
-Sistem ini memiliki beberapa halaman (UI) utama sebagai berikut:
-
-1. **Landing Page (`Landing.tsx`)** - Halaman utama untuk informasi singkat mengenai perpustakaan.
-2. **Autentikasi (`Login.tsx`, `Register.tsx`)** - Halaman untuk masuk dan mendaftar akun admin staf perpustakaan.
-3. **Dashboard (`Dashboard.tsx`)** - Ikhtisar dan ringkasan data seperti total buku, anggota aktif, dan statistik.
-4. **Manajemen Buku (`Books.tsx`)** - Halaman untuk melihat daftar buku, menambah buku baru, mengubah data, dan menghapus buku dari katalog.
-5. **Data Anggota (`DataAnggota.tsx`)** - Halaman untuk manajemen dan melihat basis data anggota/santri.
-6. **Kunjungan (`Visits.tsx` & `RiwayatKunjungan.tsx`)** - UI untuk mencatat pendaftaran pengunjung/buku tamu dan halaman riwayat data kunjungan.
-7. **Peminjaman & Transaksi (`Peminjaman.tsx` & `RiwayatTransaksi.tsx`)** - UI untuk melayani peminjaman dan pengembalian buku, serta melihat riwayat status seluruh proses transaksi dalam perpustakaan.
-8. **Laporan (`Reports.tsx`)** - Penampilan laporan dan analisis kegiatan perpustakaan atau pencetakan/ekspor data.
-
-## Detail API (Application Programming Interface)
-
-Sistem menggunakan API interaksi memori lokal melalui `Dexie.js` yang didefinisikan dalam `api.ts`. Berikut kebutuhan/fungsionalitas fungsinya:
-
-- **Books API**
-  - `getAll()`: Memuat seluruh data buku.
-  - `add(book)`: Menambahkan buku baru ke *database*.
-  - `update(id, data)`: Memperbarui spesifikasi dan status ketersediaan buku.
-  - `delete(id)`: Menghapus sebuah buku dari koleksi.
-
-- **Members API**
-  - `getAll()`: Memuat daftar semua anggota.
-  - `add(member)`: Mendaftarkan anggota baru.
-
-- **Transactions API**
-  - `getAll()`: Memuat daftar riwayat seluruh transaksi buku (Peminjaman/Pengembalian).
-  - `add(trans)`: Menyimpan data ketika transaksi baru diproses.
-  - `update(id, data)`: Memperbarui status peminjaman (contohnya dari "Dipinjam" menjadi "Dikembalikan").
-
-- **Visits API**
-  - `getAll()`: Memuat laporan sejarah kunjungan perpustakaan.
-  - `add(visit)`: Merekam jadwal dan identitas kunjungan pengunjung baru.
-
-- **Auth & Admins API**
-  - `login(username)`: Mencari akun admin dari *database* berdasarkan `username`.
-  - `getAdmins()`: Mengambil daftar admin yang terdaftar.
-  - `addAdmin(admin)`: Mendaftarkan akun admin baru (Registrasi).
-  - `updateAdmin(id, data)`: Mengubah profil/data admin.
-
-- **System API**
-  - `backup()`: Mengekspor (backup) keseluruhan data table dari IndexedDB menjadi objek JSON secara *real-time*.
-
-*(Catatan: Semua data yang diproses lewat API ini tersimpan di Memory Local Storage dari web browser yang digunakan).*
+Sistem Manajemen Perpustakaan Darunnajah adalah aplikasi berbasis web yang dirombak untuk menggunakan arsitektur *Client-Server* penuh menggunakan **React (Vite) + TypeScript** untuk Antarmuka (UI) dan **Node.js (Express) + MySQL** untuk layanan *Backend*. Sistem ini memberdayakan staf perpustakaan untuk mengelola buku, kunjungan tamu perpustakaan, transaksi peminjaman (mengontrol stok), serta pembuatan daftar profil admin. 
 
 ---
 
-## Tata Cara Setup & Instalasi
+## Prasyarat Sistem
 
-Ikuti langkah-langkah di bawah untuk mengatur dan menjalankan sistem secara lokal:
+Sebelum Anda menjalankan sistem ini, pastikan komputer/server Anda telah memiliki prasyarat di bawah ini:
+- **Node.js** (Versi 18 atau lebih baru) dan NPM.
+- **MySQL Database Server** (Misalnya MySQL/MariaDB yang berjalan secara lokal pada port 3306 atau menggunakan XAMPP/MAMP).
 
-### 1. Prasyarat Sistem
-Pastikan Anda telah menginstal Node.js di komputer (disarankan versi 18 ke atas) beserta NPM package manager.
+---
 
-### 2. Instalasi Ketergantungan (*Dependencies*)
-Buka *terminal* atau *command prompt*, arahkan (*cd*) ke dalam folder proyek (*Darunnajah-Management-Library*), kemudian jalankan perintah berikut untuk mengunduh semua *library*:
+## 1. Setup Backend (Server & Database)
+
+Pusat kendali (API) dan penyimpanan utama (Database MySQL) berada di direkori `/backend`. Anda harus menyiapkan basis data dan *environment* peladen dahulu sebelum memulai _Frontend_-nya.
+
+### A. Buat Database MySQL
+Buka klien MySQL Anda (seperti phpMyAdmin, DBeaver, atau Terminal) dan buatlah basis data (database) kosong dengan nama `darunnajah_library` (atau sesuaikan dengan konfigurasi `.env` Anda kelak).
+
+```sql
+CREATE DATABASE darunnajah_library;
+```
+
+### B. Konfigurasi File `.env` Backend
+Buka terminal dan arahkan ke penempatan *backend*:
+```bash
+cd backend
+```
+
+Buatlah sebuah *file* bernema `.env` di dalam folder `backend` ini (sejajar dengan `package.json`). Isi _file_ tersebut dengan susunan seperti ini:
+
+```env
+# Konfigurasi Koneksi Database
+DB_HOST=127.0.0.1
+DB_USER=root
+DB_PASSWORD=password_mysql_anda # Kosongkan jika root localhost default (XAMPP tanpa password)
+DB_NAME=darunnajah_library
+
+# Konfigurasi Keamanan (Token JWT)
+JWT_SECRET=supersecretjwtkey
+JWT_EXPIRES_IN=1h
+
+# Port Eksekusi API Server Lokal
+PORT=9602
+```
+
+### C. Instalasi Dependensi Backend
+Masih di *terminal* folder `backend`, unduh semua *package* Node.js yang diperlukan *backend* dengan perintah:
+
 ```bash
 npm install
 ```
 
-### 3. Pengaturan *Environment* Port (Opsional)
-Jika Anda ingin menentukan port lain agar tidak berbenturan dengan sistem Anda, Anda bisa menggunakan file konfigurasi.
-- Buat file baru dengan nama `.env` di folder utama aplikasi.
-- Isi dengan variabel `PORT` yang dikehendaki. Misalnya:
-  ```env
-  PORT=3000
-  ```
+### D. Migrasi & Seeding Data Utama
+Sistem ini menggunakan **Knex.js** supaya struktur tabel dan _dummy data_ percobaan (Akun Admin default, Daftar Buku awal, Riwayat Kunjungan dan Peminjaman) dapat dipasang secara serentak, tanpa perlu mengatur setiap kolom MySQL secara manual.  
+Abaikan perintah ini jika Anda menggunakan instruksi terpisah `npx knex migrate:latest`.
 
-### 4. Menjalankan Aplikasi (*Development Server*)
-Gunakan perintah ini untuk menyalakan mode pengembangan (CORS aktif dan hot-reload):
+Untuk langsung menetapkan/me-*load* seluruh rancangan Skema Database (tabel `admins`, `books`, `transactions`, `visits`, dan `members`) **beserta** menanamkan Data Pancingan (_Seeder_), jalankan *script* berikut:
+
+```bash
+npm run migrate:latest:seed
+```
+
+### E. Menyalakan Server Backend
+Apabila data berhasil dimigrasi, segera luncurkan *Development Server API* dengan perintah:
+
 ```bash
 npm run dev
 ```
-Setelah berjalan, Anda dapat mengakses antarmuka sistem pada peramban web (*browser*) dengan membuka URL: `http://localhost:3000` (atau *port* kustom yang sudah Anda isi).
+Peladen (Server API) sekarang hidup dan menjaga tautan rute Anda di: **`http://localhost:9602`** (Sesuai dengan `PORT` di *Backend*). Jika Anda ingin mengecek dokumentasi API interaktifnya, bukalah tautan **`http://localhost:9602/api-docs`** di web *browser* Anda.
 
-### 5. *Database Seeding* Otomatis
-Sistem ini memuat file `db.ts` yang akan secara otomatis memasukkan basis data contoh/data awal (*seeding*) pada kali pertama Anda mengakses situs saat basis datanya kosong. Anda bisa langsung masuk sebagai admin atau anggota default dan bereksplorasi.
+---
+
+## 2. Setup Frontend (UI / Antarmuka)
+
+Kerangka UI perpustakaan berakar di sistem utama (luar penempatan *backend*). Buka *panel terminal baru* untuk menjalankan *Frontend React / Vite*.
+
+### A. Konfigurasi File `.env` untuk UI (Opsional)
+Tetap berada di penempatan/lokasi akar folder proyek (`Darunnajah-Management-Library`).
+Jika Anda enggan *port frontend* VITE Anda bertabrakan dengan koneksi lain, buat file `.env` di *root directory* perpustakaan ini lalu tempatkan *port default* Vite:
+
+```env
+PORT=9604
+```
+
+### B. Instalasi Dependensi Web UI
+Unduh material/pustaka antarmuka yang diperlukan proyek _Frontend_ Node:
+
+```bash
+npm install
+```
+
+*(Catatan: Aplikasi mengarah menuntut sambungan langsung (`baseURL`) ke **`http://localhost:9602/api`**. Jika Anda hendak menghabiskan rute port backend menjadi 3000 atau sebagainya, ubahlah konstanta baris `API_URL` yang terdapat di file `src/apiClient.ts`)*.
+
+### C. Meluncurkan Aplikasi
+Nyalakan kerangka grafis/UI *(Development Mode)* dengan perintah:
+
+```bash
+npm run dev
+```
+
+Selamat! Kini aplikasi Manajemen Perpustakaan Darunnajah sudah berjalan mumpuni secara menyeluruh (*Fullstack*).
+Kunjungi **`http://localhost:9604`** di penjelajah web komputer.
+
+---
+
+## 3. Akun Akses Percobaan
+
+Efek dari perintah *Seeder* pada awal tadi, Database telah dibekali dengan susunan Login contoh yang dapat segera Anda gunakan di halaman masuk UI.
+
+Gunakan rujukan ini saat singgah di halaman login:
+- **Username** : `admin1`
+- **Password** : `password123`
+
+*(Anda bisa menambah Pengelola/Admin secara mandiri via tombol Register di web dengan isian Data yang Tervalidasi)*.
