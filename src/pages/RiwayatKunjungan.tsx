@@ -1,19 +1,26 @@
 import { useState, useEffect } from "react";
-import { useHistory } from "../context/HistoryContext";
+import apiClient from "../apiClient";
 
 export default function RiwayatKunjungan() {
-  const { history, deleteHistory } = useHistory();
-
   const [data, setData] = useState<any[]>([]);
   const [selectMode, setSelectMode] = useState(false);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<number[]>([]);
+
+  const fetchHistory = async () => {
+    try {
+      const res = await apiClient.get('/visits');
+      setData(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   /* sync data */
   useEffect(() => {
-    setData(history.filter(i => i.category === "kunjungan"));
-  }, [history]);
+    fetchHistory();
+  }, []);
 
-  const toggleSelect = (id: string) => {
+  const toggleSelect = (id: number) => {
     setSelected(prev =>
       prev.includes(id)
         ? prev.filter(i => i !== id)
@@ -29,10 +36,17 @@ export default function RiwayatKunjungan() {
     }
   };
 
-  const deleteSelected = () => {
-    selected.forEach(id => deleteHistory(id));
-    setSelected([]);
-    setSelectMode(false);
+  const deleteSelected = async () => {
+    try {
+      for (const id of selected) {
+        await apiClient.delete(`/visits/${id}`);
+      }
+      setSelected([]);
+      setSelectMode(false);
+      fetchHistory();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -113,9 +127,9 @@ export default function RiwayatKunjungan() {
 
                   <td>{item.name}</td>
 
-                  <td className="capitalize">{item.role}</td>
+                  <td>{item.chosing}</td>
 
-                  <td>{item.description}</td>
+                  <td>{item.purpose || item.description}</td>
 
                   <td>
                     <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs">

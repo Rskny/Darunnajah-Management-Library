@@ -18,7 +18,12 @@ const authenticateToken = require('../authMiddleware');
 // Get semua catatan pengunjung
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const visits = await db('visits').select('*').orderBy('id', 'desc');
+        const { date } = req.query;
+        let query = db('visits').select('*');
+        if (date) {
+            query = query.where({ date });
+        }
+        const visits = await query.orderBy('id', 'desc');
         res.json(visits);
     } catch (error) {
         res.status(500).json({ error: 'Gagal mengambil data kunjungan', detail: error.message });

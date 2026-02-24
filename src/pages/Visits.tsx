@@ -22,7 +22,8 @@ const Visits: React.FC = () => {
 
   const fetchVisits = async () => {
     try {
-      const res = await apiClient.get('/visits');
+      const today = new Date().toISOString().split('T')[0];
+      const res = await apiClient.get(`/visits?date=${today}`);
       setVisits(res.data);
     } catch (err) {
       console.error(err);
@@ -39,8 +40,12 @@ const Visits: React.FC = () => {
       const now = new Date();
       await apiClient.post('/visits', {
         name: data.name,
-        nis: data.chosing === 'siswa' ? 'N/A' : data.chosing, // Adjust according to your form data
-        date: now.toISOString().split('T')[0]
+        nis: data.chosing === 'Siswa' ? 'N/A' : data.chosing, // Keep the fake NIS logic
+        kelas: data.kelas,
+        chosing: data.chosing,
+        purpose: data.purpose,
+        date: now.toISOString().split('T')[0],
+        time: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
       });
       fetchVisits();
 
