@@ -42,7 +42,16 @@ router.get('/', authenticateToken, async (req, res) => {
  *             properties:
  *               title: { type: string }
  *               author: { type: string }
+ *               year: { type: string }
+ *               publisher: { type: string }
+ *               isbn: { type: string }
  *               category: { type: string }
+ *               classCode: { type: string }
+ *               major: { type: string }
+ *               stock: { type: integer }
+ *               source: { type: string }
+ *               inputDate: { type: string }
+ *               coverImage: { type: string }
  *               available: { type: boolean }
  *     responses:
  *       201:
@@ -51,8 +60,8 @@ router.get('/', authenticateToken, async (req, res) => {
 // Tambah buku baru
 router.post('/', authenticateToken, async (req, res) => {
     try {
-        const { title, author, category, available } = req.body;
-        const [id] = await db('books').insert({ title, author, category, available: available ?? true });
+        const { title, author, year, publisher, isbn, category, classCode, major, stock, source, inputDate, coverImage, available } = req.body;
+        const [id] = await db('books').insert({ title, author, year, publisher, isbn, category, classCode, major, stock, source, inputDate, coverImage, available: available ?? true });
         res.status(201).json({ message: 'Buku berhasil ditambahkan', id });
     } catch (error) {
         res.status(500).json({ error: 'Gagal menambah buku', detail: error.message });
@@ -82,7 +91,16 @@ router.post('/', authenticateToken, async (req, res) => {
  *             properties:
  *               title: { type: string }
  *               author: { type: string }
+ *               year: { type: string }
+ *               publisher: { type: string }
+ *               isbn: { type: string }
  *               category: { type: string }
+ *               classCode: { type: string }
+ *               major: { type: string }
+ *               stock: { type: integer }
+ *               source: { type: string }
+ *               inputDate: { type: string }
+ *               coverImage: { type: string }
  *               available: { type: boolean }
  *     responses:
  *       200:

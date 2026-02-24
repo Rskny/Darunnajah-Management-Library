@@ -1,9 +1,11 @@
 exports.up = function (knex) {
     return knex.schema.createTable('members', table => {
         table.increments('id').primary();
-        table.string('name').notNullable();
+        table.string('nama').notNullable();
         table.string('nis').notNullable().unique();
-        table.string('class').notNullable();
+        table.string('kelas').notNullable();
+        table.string('jurusan').notNullable();
+        table.string('gender').notNullable();
     });
 };
 

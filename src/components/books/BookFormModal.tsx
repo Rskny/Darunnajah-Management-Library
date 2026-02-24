@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import useLocalStorage from '../../hooks/useLocalStorage';
-import { Book } from '../../../types';
+import { Book } from '../../types';
 import { CATEGORIES } from '../../constants/data';
 
 interface BookFormModalProps {
@@ -262,6 +262,23 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
                   onChange={(e) => handleChange('stock', parseInt(e.target.value) || 1)}
                   className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl font-bold"
                 />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-500 uppercase ml-2">
+                  Asal Buku *
+                </label>
+
+                <select
+                  required
+                  value={formData.source}
+                  onChange={(e) => handleChange('source', e.target.value)}
+                  className="w-full px-5 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl font-bold"
+                >
+                  <option value="Pembelian">Pembelian</option>
+                  <option value="Sumbangan">Sumbangan</option>
+                  <option value="Denda">Denda</option>
+                </select>
               </div>
 
             </div>

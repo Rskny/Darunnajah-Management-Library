@@ -21,20 +21,20 @@ exports.seed = async function (knex) {
 
     // Inserts dummy books
     await knex('books').insert([
-        { id: 1, title: 'Buku Matematika Dasar', author: 'Budi Santoso', category: 'Pendidikan', available: true },
-        { id: 2, title: 'Buku Fisika Kuantum', author: 'Albert Enstein', category: 'Pendidikan', available: true },
-        { id: 3, title: 'Algoritma Pemrograman', author: 'Rinaldi Munir', category: 'IT', available: false },
-        { id: 4, title: 'Laskar Pelangi', author: 'Andrea Hirata', category: 'Novel', available: true },
-        { id: 5, title: 'Bumi Manusia', author: 'Pramoedya Ananta Toer', category: 'Novel', available: false }
+        { id: 1, title: 'Buku Matematika Dasar', author: 'Budi Santoso', year: '2023', publisher: 'Erlangga', category: 'Pendidikan', stock: 5, source: 'Pembelian', inputDate: '2026-01-01', available: true },
+        { id: 2, title: 'Buku Fisika Kuantum', author: 'Albert Enstein', year: '2022', publisher: 'Gramedia', category: 'Pendidikan', stock: 3, source: 'Sumbangan', inputDate: '2026-01-02', available: true },
+        { id: 3, title: 'Algoritma Pemrograman', author: 'Rinaldi Munir', year: '2021', publisher: 'Informatika', category: 'IT', stock: 2, source: 'Pembelian', inputDate: '2026-01-03', available: false },
+        { id: 4, title: 'Laskar Pelangi', author: 'Andrea Hirata', year: '2005', publisher: 'Bentang Pustaka', category: 'Novel', stock: 10, source: 'Sumbangan', inputDate: '2026-01-04', available: true },
+        { id: 5, title: 'Bumi Manusia', author: 'Pramoedya Ananta Toer', year: '1980', publisher: 'Hasta Mitra', category: 'Novel', stock: 4, source: 'Pembelian', inputDate: '2026-01-05', available: false }
     ]);
 
     // Inserts dummy members
     await knex('members').insert([
-        { id: 1, name: 'Siswa A', nis: '10001', class: 'X-A' },
-        { id: 2, name: 'Siswa B', nis: '10002', class: 'X-B' },
-        { id: 3, name: 'Siswa C', nis: '10003', class: 'XI-A' },
-        { id: 4, name: 'Siswa D', nis: '10004', class: 'XI-B' },
-        { id: 5, name: 'Siswa E', nis: '10005', class: 'XII-A' }
+        { id: 1, nama: 'Siswa A', nis: '10001', kelas: 'X-A', jurusan: 'IPA', gender: 'Laki-laki' },
+        { id: 2, nama: 'Siswa B', nis: '10002', kelas: 'X-B', jurusan: 'IPS', gender: 'Perempuan' },
+        { id: 3, nama: 'Siswa C', nis: '10003', kelas: 'XI-A', jurusan: 'IPA', gender: 'Laki-laki' },
+        { id: 4, nama: 'Siswa D', nis: '10004', kelas: 'XI-B', jurusan: 'IPS', gender: 'Perempuan' },
+        { id: 5, nama: 'Siswa E', nis: '10005', kelas: 'XII-A', jurusan: 'IPA', gender: 'Laki-laki' }
     ]);
 
     // Inserts dummy transactions
