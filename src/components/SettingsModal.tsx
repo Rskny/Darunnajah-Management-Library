@@ -93,7 +93,7 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
             </div>
 
             <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center font-bold text-blue-700">
-              {user.name.charAt(0)}
+              {user?.name?.charAt(0) || "U"}
             </div>
           </div>
 

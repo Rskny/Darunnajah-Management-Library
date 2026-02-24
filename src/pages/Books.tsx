@@ -8,7 +8,14 @@ import { Book } from '../types';
 const Books: React.FC = () => {
 
   const [books, setBooks] = useState<Book[]>([]);
+  const [showSelect, setShowSelect] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [restockBook, setRestockBook] = useState<Book | null>(null);
+  const [restockValue, setRestockValue] = useState(1);
 
+  // FETCH
   const fetchBooks = async () => {
     try {
       const res = await apiClient.get('/books');
@@ -22,70 +29,43 @@ const Books: React.FC = () => {
     fetchBooks();
   }, []);
 
-  // SELECT MODE
-  const [showSelect, setShowSelect] = useState(false);
-  const [selected, setSelected] = useState<string[]>([]);
-
-  // MODAL
-  const [showForm, setShowForm] = useState(false);
-  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-
-  // ADD BOOK
+  // ADD
   const handleAddBook = async (book: Omit<Book, 'id' | 'available'>) => {
-    try {
-      await apiClient.post('/books', book);
-      fetchBooks();
-      setShowForm(false);
-    } catch (err) {
-      console.error(err);
-    }
+    await apiClient.post('/books', book);
+    fetchBooks();
+    setShowForm(false);
   };
 
-  // BULK IMPORT
+  // BULK
   const handleBulkAdd = async (booksData: Omit<Book, 'id' | 'available'>[]) => {
-    try {
-      for (const b of booksData) {
-        await apiClient.post('/books', b);
-      }
-      fetchBooks();
-      setShowForm(false);
-    } catch (err) {
-      console.error(err);
+    for (const b of booksData) {
+      await apiClient.post('/books', b);
     }
+    fetchBooks();
+    setShowForm(false);
   };
 
-  // BORROW BOOK
-  const handleBorrow = (data: any) => {
-    setBooks(prev =>
-      prev.map(b =>
-        b.title === data.bookTitle
-          ? { ...b, stock: b.stock - 1, available: b.stock - 1 > 0 }
-          : b
-      )
-    );
-  };
-
-  // DELETE SELECTED
+  // DELETE
   const handleDeleteSelected = async () => {
-    try {
-      for (const id of selected) {
-        await apiClient.delete(`/books/${id}`);
-      }
-      fetchBooks();
-      setSelected([]);
-    } catch (err) {
-      console.error(err);
+    for (const id of selected) {
+      await apiClient.delete(`/books/${id}`);
     }
+    fetchBooks();
+    setSelected([]);
   };
-  React.useEffect(() => {
-    const syncBooks = () => {
-      fetchBooks();
-    };
 
-    window.addEventListener("booksUpdated", syncBooks);
-    return () => window.removeEventListener("booksUpdated", syncBooks);
-  }, []);
+  // RESTOCK API
+  const handleRestock = async () => {
+    if (!restockBook) return;
 
+    await apiClient.patch(`/books/${restockBook.id}/restock`, {
+      amount: restockValue
+    });
+
+    setRestockBook(null);
+    setRestockValue(1);
+    fetchBooks();
+  };
 
   return (
     <div className="p-10">
@@ -103,7 +83,6 @@ const Books: React.FC = () => {
 
         <div className="flex gap-3">
 
-          {/* SELECT BUTTON */}
           <button
             onClick={() => {
               setShowSelect(!showSelect);
@@ -114,7 +93,6 @@ const Books: React.FC = () => {
             {showSelect ? "Cancel" : "Select"}
           </button>
 
-          {/* DELETE BUTTON */}
           {selected.length > 0 && (
             <button
               onClick={handleDeleteSelected}
@@ -124,7 +102,6 @@ const Books: React.FC = () => {
             </button>
           )}
 
-          {/* ADD BOOK */}
           <button
             onClick={() => setShowForm(true)}
             className="px-6 py-3 rounded-2xl bg-[#3b5998] text-white font-black text-xs uppercase tracking-widest shadow-xl hover:bg-black transition-all"
@@ -142,8 +119,13 @@ const Books: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-          {books.map(book => (
+          {books.map((book, i) => (
             <div key={book.id} className="relative">
+
+              {/* NUMBER */}
+              <div className="absolute -top-3 -right-3 bg-black text-white text-xs w-6 h-6 flex items-center justify-center rounded-full">
+                {i + 1}
+              </div>
 
               {/* CHECKBOX */}
               {showSelect && (
@@ -164,8 +146,8 @@ const Books: React.FC = () => {
               <BookCard
                 book={book}
                 onLend={() => setSelectedBook(book)}
+                onRestock={() => setRestockBook(book)}
               />
-
             </div>
           ))}
         </div>
@@ -186,6 +168,43 @@ const Books: React.FC = () => {
           bookTitle={selectedBook.title}
           onClose={() => setSelectedBook(null)}
         />
+      )}
+
+      {/* MODAL RESTOCK */}
+      {restockBook && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-80 shadow-xl">
+
+            <h2 className="font-bold text-lg mb-4">
+              Restock Buku
+            </h2>
+
+            <input
+              type="number"
+              min={1}
+              value={restockValue}
+              onChange={e => setRestockValue(Number(e.target.value))}
+              className="w-full border rounded-lg p-2 mb-4"
+            />
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setRestockBook(null)}
+                className="px-4 py-2 bg-slate-200 rounded-lg text-sm"
+              >
+                Batal
+              </button>
+
+              <button
+                onClick={handleRestock}
+                className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm"
+              >
+                Submit
+              </button>
+            </div>
+
+          </div>
+        </div>
       )}
 
     </div>

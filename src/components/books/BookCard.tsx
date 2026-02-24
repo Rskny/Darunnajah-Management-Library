@@ -4,9 +4,10 @@ import { Book } from "../types";
 interface BookCardProps {
   book: Book;
   onLend: () => void;
+  onRestock?: () => void; // optional biar ga error
 }
 
-const BookCard: React.FC<BookCardProps> = ({ book, onLend }) => {
+const BookCard: React.FC<BookCardProps> = ({ book, onLend, onRestock }) => {
   return (
     <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between h-full relative">
 
@@ -32,7 +33,7 @@ const BookCard: React.FC<BookCardProps> = ({ book, onLend }) => {
         </p>
       </div>
 
-      {/* INFO MINI */}
+      {/* INFO */}
       <div className="grid grid-cols-2 gap-2 my-3 text-[10px]">
         <div className="bg-slate-50 rounded-lg p-2 text-center">
           <p className="text-slate-400 font-bold">Tahun</p>
@@ -68,18 +69,32 @@ const BookCard: React.FC<BookCardProps> = ({ book, onLend }) => {
           {book.publisher}
         </div>
 
-        <button
-          onClick={onLend}
-          disabled={!book.available}
-          className={`px-4 py-2 rounded-lg text-[11px] font-bold transition ${
-            book.available
-              ? "bg-[#3b5998] text-white hover:bg-[#2d4373]"
-              : "bg-slate-100 text-slate-400 cursor-not-allowed"
-          }`}
-        >
-          {book.available ? "Pinjam" : "Habis"}
-        </button>
+        <div className="flex gap-2">
 
+          {/* RESTOCK BUTTON */}
+          {onRestock && (
+            <button
+              onClick={onRestock}
+              className="px-3 py-2 rounded-lg text-[11px] font-bold bg-emerald-500 text-white hover:bg-emerald-600"
+            >
+              Restock
+            </button>
+          )}
+
+          {/* BORROW BUTTON */}
+          <button
+            onClick={onLend}
+            disabled={!book.available}
+            className={`px-4 py-2 rounded-lg text-[11px] font-bold transition ${
+              book.available
+                ? "bg-[#3b5998] text-white hover:bg-[#2d4373]"
+                : "bg-slate-100 text-slate-400 cursor-not-allowed"
+            }`}
+          >
+            {book.available ? "Pinjam" : "Habis"}
+          </button>
+
+        </div>
       </div>
     </div>
   );

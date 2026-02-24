@@ -1,13 +1,17 @@
 import React, { useState } from "react";
 import SettingsModal from "./SettingsModal";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const Header: React.FC = () => {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const path = location.pathname;
 
   const safeUser = user ?? {
     name: "Admin",
@@ -17,21 +21,38 @@ const Header: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate("/"); // redirect ke landing/login
+    navigate("/");
   };
+
+  const getPlaceholder = () => {
+    if (path.includes("books")) return "Cari buku...";
+    if (path.includes("anggota")) return "Cari anggota...";
+    if (path.includes("peminjaman")) return "Cari peminjaman...";
+    if (path.includes("kunjungan")) return "Cari kunjungan...";
+    if (path.includes("riwayat")) return "Cari riwayat...";
+    return "Cari seluruh sistem...";
+  };
+
+  const hideSearch = path.includes("laporan");
 
   return (
     <header className="w-full flex justify-between items-center px-6 py-4 bg-white shadow-sm border-b">
 
-      {/* TITLE */}
-      <h1 className="text-lg font-bold text-slate-800">
-        Dashboard Perpustakaan
+      <h1 className="text-lg font-bold text-slate-800 capitalize">
+        {path === "/" ? "Dashboard" : path.replace("/", "")}
       </h1>
 
-      {/* RIGHT */}
       <div className="flex items-center gap-4">
 
-        {/* USER BUTTON */}
+        {!hideSearch && (
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={getPlaceholder()}
+            className="px-4 py-2 rounded-xl border w-72 outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        )}
+
         <button
           onClick={() => setOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-xl hover:bg-slate-200 transition"
@@ -45,7 +66,6 @@ const Header: React.FC = () => {
           </span>
         </button>
 
-        {/* LOGOUT */}
         <button
           onClick={handleLogout}
           className="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition text-sm font-semibold"
@@ -54,7 +74,6 @@ const Header: React.FC = () => {
         </button>
       </div>
 
-      {/* MODAL */}
       {open && (
         <SettingsModal
           user={safeUser}
