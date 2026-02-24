@@ -66,6 +66,7 @@ router.post('/login', async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
+ *               name: { type: string }
  *               username: { type: string }
  *               password: { type: string }
  *               email: { type: string }
@@ -75,10 +76,11 @@ router.post('/login', async (req, res) => {
  */
 router.post('/register', async (req, res) => {
     try {
-        const { username, password, email } = req.body;
+        const { name, username, password, email } = req.body;
         const hashedPassword = await bcrypt.hash(password, 10);
 
         await db('admins').insert({
+            name,
             username,
             password: hashedPassword,
             email
@@ -105,7 +107,7 @@ router.post('/register', async (req, res) => {
 // Get List Semua Admin
 router.get('/admins', authenticateToken, async (req, res) => {
     try {
-        const admins = await db('admins').select('id', 'username', 'email');
+        const admins = await db('admins').select('id', 'name', 'username', 'email');
         res.json(admins);
     } catch (error) {
         res.status(500).json({ error: 'Gagal mendapatkan data admin', detail: error.message });
@@ -144,9 +146,10 @@ router.get('/admins', authenticateToken, async (req, res) => {
 router.put('/admins/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const { username, email, password } = req.body;
+        const { name, username, email, password } = req.body;
         const updateData = {};
 
+        if (name) updateData.name = name;
         if (username) updateData.username = username;
         if (email) updateData.email = email;
         if (password) {

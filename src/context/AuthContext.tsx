@@ -58,9 +58,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await apiClient.post('/auth/register', data);
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error("Register Error:", err);
-      return false;
+      throw new Error(err.response?.data?.error || "Username atau email sudah dipakai");
     }
   };
 

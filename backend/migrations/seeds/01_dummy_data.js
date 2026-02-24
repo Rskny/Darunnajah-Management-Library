@@ -12,11 +12,11 @@ exports.seed = async function (knex) {
 
     // Inserts dummy admins
     await knex('admins').insert([
-        { id: 1, username: 'admin1', password: passwordHash, email: 'admin1@test.com' },
-        { id: 2, username: 'admin2', password: passwordHash, email: 'admin2@test.com' },
-        { id: 3, username: 'admin3', password: passwordHash, email: 'admin3@test.com' },
-        { id: 4, username: 'admin4', password: passwordHash, email: 'admin4@test.com' },
-        { id: 5, username: 'admin5', password: passwordHash, email: 'admin5@test.com' }
+        { id: 1, name: 'Kepala Perpus', username: 'admin1', password: passwordHash, email: 'admin1@test.com' },
+        { id: 2, name: 'Admin Perpus', username: 'admin2', password: passwordHash, email: 'admin2@test.com' },
+        { id: 3, name: 'Staf IT', username: 'admin3', password: passwordHash, email: 'admin3@test.com' },
+        { id: 4, name: 'Pustakawan A', username: 'admin4', password: passwordHash, email: 'admin4@test.com' },
+        { id: 5, name: 'Pustakawan B', username: 'admin5', password: passwordHash, email: 'admin5@test.com' }
     ]);
 
     // Inserts dummy books

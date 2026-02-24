@@ -4,22 +4,35 @@ import { useAuth } from "../context/AuthContext";
 export default function RegisterModal({ onClose, onSwitch }: any) {
   const { register } = useAuth();
 
-  const [form,setForm]=useState({
-    name:"",
-    username:"",
-    password:"",
+  const [form, setForm] = useState({
+    name: "",
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: ""
   });
 
-  const submit=()=>{
-    if(!form.name||!form.username||!form.password)
+  const submit = async () => {
+    if (!form.name || !form.username || !form.email || !form.password || !form.confirmPassword) {
       return alert("Isi semua field");
+    }
 
-    const ok = register(form);
+    if (form.password !== form.confirmPassword) {
+      return alert("Password dan Konfirmasi Password tidak cocok!");
+    }
 
-    if(!ok) return alert("Username sudah dipakai");
-
-    alert("Register berhasil!");
-    onSwitch();
+    try {
+      await register({
+        name: form.name,
+        username: form.username,
+        email: form.email,
+        password: form.password
+      });
+      alert("Register berhasil!");
+      onSwitch();
+    } catch (err: any) {
+      alert(err.message || "Register gagal!");
+    }
   };
 
   return (
@@ -31,14 +44,20 @@ export default function RegisterModal({ onClose, onSwitch }: any) {
 
         <h2 className="text-xl font-bold mb-6 text-center">Register</h2>
 
-        <input placeholder="Nama" className="input"
-          onChange={e=>setForm({...form,name:e.target.value})}/>
+        <input placeholder="Nama Lengkap" className="input"
+          onChange={e => setForm({ ...form, name: e.target.value })} />
 
         <input placeholder="Username" className="input"
-          onChange={e=>setForm({...form,username:e.target.value})}/>
+          onChange={e => setForm({ ...form, username: e.target.value })} />
+
+        <input type="email" placeholder="Email" className="input"
+          onChange={e => setForm({ ...form, email: e.target.value })} />
 
         <input type="password" placeholder="Password" className="input"
-          onChange={e=>setForm({...form,password:e.target.value})}/>
+          onChange={e => setForm({ ...form, password: e.target.value })} />
+
+        <input type="password" placeholder="Konfirmasi Password" className="input"
+          onChange={e => setForm({ ...form, confirmPassword: e.target.value })} />
 
         <button onClick={submit} className="btn-primary">Create Account</button>
 
