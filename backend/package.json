@@ -7,7 +7,10 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "migrate": "npx knex migrate:latest",
-    "migrate:rollback": "npx knex migrate:rollback"
+    "seed": "npx knex seed:run",
+    "migrate:rollback": "npx knex migrate:rollback",
+    "migrate:rollback:all": "npx knex migrate:rollback --all",
+    "migrate:latest:seed": "npx knex migrate:latest && npx knex seed:run"
   },
   "keywords": [],
   "author": "",
