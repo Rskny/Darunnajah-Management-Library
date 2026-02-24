@@ -1,56 +1,44 @@
-import React,{useState} from "react";
+import React, { useState } from "react";
 
-export default function TransactionTable({ transactions, onAction }: any) {
+export default function TransactionTable({ transactions, onAction, onDeleteSelected, onExtend }: any) {
 
-  const [showSelect,setShowSelect]=useState(false);
-  const [selected,setSelected]=useState<string[]>([]);
-  const [extendId,setExtendId]=useState<string|null>(null);
-  const [newDate,setNewDate]=useState("");
+  const [showSelect, setShowSelect] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [extendId, setExtendId] = useState<string | null>(null);
+  const [newDate, setNewDate] = useState("");
 
-  const toggle=(id:string)=>{
-    setSelected(prev=> prev.includes(id)
-      ? prev.filter(x=>x!==id)
-      : [...prev,id]
+  const toggle = (id: string) => {
+    setSelected(prev => prev.includes(id)
+      ? prev.filter(x => x !== id)
+      : [...prev, id]
     );
   };
 
-  const calcLate=(dueDate:string)=>{
-    const today=new Date();
-    const due=new Date(dueDate);
-    const diff=Math.ceil((today.getTime()-due.getTime())/(1000*60*60*24));
-    return diff>0?diff:0;
+  const calcLate = (dueDate: string) => {
+    const today = new Date();
+    const due = new Date(dueDate);
+    const diff = Math.ceil((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
   };
 
   /* delete selected */
-  const handleDelete=()=>{
-    const saved=JSON.parse(localStorage.getItem("transactions")||"[]");
-
-    const filtered=saved.filter((t:any)=>!selected.includes(t.id));
-
-    localStorage.setItem("transactions",JSON.stringify(filtered));
-    setSelected([]);
-
-    window.dispatchEvent(new Event("transactionsUpdated"));
-    window.dispatchEvent(new Event("storage"));
+  const handleDelete = () => {
+    if (onDeleteSelected) {
+      onDeleteSelected(selected);
+      setSelected([]);
+      setShowSelect(false);
+    }
   };
 
   /* submit extend */
-  const submitExtend=(id:string)=>{
-    if(!newDate) return;
+  const submitExtend = (id: string) => {
+    if (!newDate) return;
 
-    const saved=JSON.parse(localStorage.getItem("transactions")||"[]");
-
-    const updated=saved.map((t:any)=>
-      t.id===id ? {...t,dueDate:new Date(newDate).toISOString()} : t
-    );
-
-    localStorage.setItem("transactions",JSON.stringify(updated));
-
-    setExtendId(null);
-    setNewDate("");
-
-    window.dispatchEvent(new Event("transactionsUpdated"));
-    window.dispatchEvent(new Event("storage"));
+    if (onExtend) {
+      onExtend(id, new Date(newDate).toISOString());
+      setExtendId(null);
+      setNewDate("");
+    }
   };
 
   return (
@@ -59,7 +47,7 @@ export default function TransactionTable({ transactions, onAction }: any) {
       <div className="mb-3 flex gap-3">
 
         <button
-          onClick={()=>{
+          onClick={() => {
             setShowSelect(!showSelect);
             setSelected([]);
           }}
@@ -68,7 +56,7 @@ export default function TransactionTable({ transactions, onAction }: any) {
           {showSelect ? "Cancel" : "Select"}
         </button>
 
-        {selected.length>0 && (
+        {selected.length > 0 && (
           <button
             onClick={handleDelete}
             className="px-4 py-1 bg-red-500 text-white rounded-lg text-xs font-bold"
@@ -95,10 +83,10 @@ export default function TransactionTable({ transactions, onAction }: any) {
         </thead>
 
         <tbody>
-          {transactions.map((t:any,i:number)=>{
-            const late=calcLate(t.dueDate);
+          {transactions.map((t: any, i: number) => {
+            const late = calcLate(t.dueDate);
 
-            return(
+            return (
               <tr key={t.id} className="text-center border-t">
 
                 {showSelect && (
@@ -106,12 +94,12 @@ export default function TransactionTable({ transactions, onAction }: any) {
                     <input
                       type="checkbox"
                       checked={selected.includes(t.id)}
-                      onChange={()=>toggle(t.id)}
+                      onChange={() => toggle(t.id)}
                     />
                   </td>
                 )}
 
-                <td>{i+1}</td>
+                <td>{i + 1}</td>
                 <td>{t.bookTitle}</td>
                 <td>{t.studentName}</td>
                 <td className="capitalize">{t.role}</td>
@@ -119,40 +107,40 @@ export default function TransactionTable({ transactions, onAction }: any) {
                 <td>{new Date(t.dueDate).toLocaleDateString("id-ID")}</td>
 
                 <td>
-                  {late>0
+                  {late > 0
                     ? <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs">Telat {late}</span>
                     : <span className="bg-green-100 text-green-600 px-3 py-1 rounded-full text-xs">Dipinjam</span>
                   }
                 </td>
 
                 <td>
-                  {extendId===t.id ? (
+                  {extendId === t.id ? (
                     <div className="flex gap-1 justify-center">
                       <input
                         type="date"
                         value={newDate}
-                        onChange={e=>setNewDate(e.target.value)}
+                        onChange={e => setNewDate(e.target.value)}
                         className="border px-2 text-xs rounded"
                       />
                       <button
-                        onClick={()=>submitExtend(t.id)}
+                        onClick={() => submitExtend(t.id)}
                         className="px-2 text-xs bg-blue-500 text-white rounded"
                       >
                         OK
                       </button>
                     </div>
-                  ):(
+                  ) : (
                     <div className="flex gap-2 justify-center">
 
                       <button
-                        onClick={()=>setExtendId(t.id)}
+                        onClick={() => setExtendId(t.id)}
                         className="px-3 py-1 text-xs rounded bg-yellow-100 text-yellow-700 font-bold"
                       >
                         Perpanjang
                       </button>
 
                       <button
-                        onClick={()=>onAction(t.id,"return")}
+                        onClick={() => onAction(t.id, "return")}
                         className="px-3 py-1 text-xs rounded bg-green-100 text-green-700 font-bold"
                       >
                         Return

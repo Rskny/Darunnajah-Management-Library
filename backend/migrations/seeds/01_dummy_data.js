@@ -39,11 +39,11 @@ exports.seed = async function (knex) {
 
     // Inserts dummy transactions
     await knex('transactions').insert([
-        { id: 1, bookId: 3, studentName: 'Siswa A', status: 'Dipinjam', borrowDate: '2026-02-20' },
-        { id: 2, bookId: 5, studentName: 'Siswa B', status: 'Dipinjam', borrowDate: '2026-02-21' },
-        { id: 3, bookId: 1, studentName: 'Siswa C', status: 'Dikembalikan', borrowDate: '2026-02-18' },
-        { id: 4, bookId: 2, studentName: 'Siswa D', status: 'Dikembalikan', borrowDate: '2026-02-19' },
-        { id: 5, bookId: 4, studentName: 'Siswa E', status: 'Dikembalikan', borrowDate: '2026-02-15' }
+        { id: 1, bookId: 3, studentName: 'Siswa A', role: 'siswa', class: 'X-A', major: 'IPA', gender: 'Laki-laki', status: 'Dipinjam', quantity: 1, borrowDate: '2026-02-20', dueDate: '2026-02-27' },
+        { id: 2, bookId: 5, studentName: 'Siswa B', role: 'siswa', class: 'X-B', major: 'IPS', gender: 'Perempuan', status: 'Dipinjam', quantity: 1, borrowDate: '2026-02-21', dueDate: '2026-02-28' },
+        { id: 3, bookId: 1, studentName: 'Siswa C', role: 'siswa', class: 'XI-A', major: 'IPA', gender: 'Laki-laki', status: 'Dikembalikan', quantity: 1, borrowDate: '2026-02-18', dueDate: '2026-02-25' },
+        { id: 4, bookId: 2, studentName: 'Siswa D', role: 'siswa', class: 'XI-B', major: 'IPS', gender: 'Perempuan', status: 'Dikembalikan', quantity: 2, borrowDate: '2026-02-19', dueDate: '2026-02-26' },
+        { id: 5, bookId: 4, studentName: 'Siswa E', role: 'siswa', class: 'XII-A', major: 'IPA', gender: 'Laki-laki', status: 'Dikembalikan', quantity: 1, borrowDate: '2026-02-15', dueDate: '2026-02-22' }
     ]);
 
     // Inserts dummy visits

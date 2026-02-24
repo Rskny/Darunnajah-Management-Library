@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import apiClient from "../apiClient";
 
 interface Transaction {
   id: string;
@@ -15,18 +16,20 @@ const Riwayat: React.FC = () => {
   const [selected, setSelected] = useState<string[]>([]);
   const [selectMode, setSelectMode] = useState(false);
 
-  const load = () => {
-    const data = JSON.parse(localStorage.getItem("transactions") || "[]");
-    setHistory(data.filter((t: any) => t.status === "returned"));
+  const fetchTransactions = async () => {
+    try {
+      const res = await apiClient.get('/transactions');
+      setHistory(res.data.filter((t: any) => t.status === "Dikembalikan"));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   useEffect(() => {
-    load();
-    window.addEventListener("transactionsUpdated", load);
-    window.addEventListener("storage", load);
+    fetchTransactions();
+    window.addEventListener("transactionsUpdated", fetchTransactions);
     return () => {
-      window.removeEventListener("transactionsUpdated", load);
-      window.removeEventListener("storage", load);
+      window.removeEventListener("transactionsUpdated", fetchTransactions);
     };
   }, []);
 
@@ -49,13 +52,17 @@ const Riwayat: React.FC = () => {
     }
   };
 
-  const deleteSelected = () => {
-    const all = JSON.parse(localStorage.getItem("transactions") || "[]");
-    const filtered = all.filter((t: Transaction) => !selected.includes(t.id));
-    localStorage.setItem("transactions", JSON.stringify(filtered));
-    setSelected([]);
-    setSelectMode(false);
-    load();
+  const deleteSelected = async () => {
+    try {
+      for (const id of selected) {
+        await apiClient.delete(`/transactions/${id}`);
+      }
+      setSelected([]);
+      setSelectMode(false);
+      fetchTransactions();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const getStatus = (dueDate: string) => {
@@ -147,11 +154,10 @@ const Riwayat: React.FC = () => {
                     <td className="px-6 py-4">{formatDate(item.dueDate)}</td>
 
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        info.status === "Tepat Waktu"
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${info.status === "Tepat Waktu"
                           ? "bg-green-100 text-green-700"
                           : "bg-red-100 text-red-700"
-                      }`}>
+                        }`}>
                         {info.status}
                       </span>
                     </td>

@@ -33,9 +33,30 @@ export default function Peminjaman() {
       if (action === "return") {
         await apiClient.put(`/transactions/${id}`, { status: "Dikembalikan" });
       } else if (action === "extend") {
-        // Here we could implement extend in backend, skipping for now as per minimal implementation
-        // await apiClient.put(`/transactions/${id}`, { extend logic });
+        // Option to extend via backend here
       }
+      fetchTransactions();
+      window.dispatchEvent(new Event("transactionsUpdated"));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteSelected = async (selectedIds: string[]) => {
+    try {
+      for (const id of selectedIds) {
+        await apiClient.delete(`/transactions/${id}`);
+      }
+      fetchTransactions();
+      window.dispatchEvent(new Event("transactionsUpdated"));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleExtend = async (id: string, newDate: string) => {
+    try {
+      await apiClient.put(`/transactions/${id}`, { dueDate: newDate });
       fetchTransactions();
       window.dispatchEvent(new Event("transactionsUpdated"));
     } catch (err) {
@@ -95,6 +116,8 @@ export default function Peminjaman() {
       <TransactionTable
         transactions={transactions.filter(t => t.status === "Dipinjam")}
         onAction={updateTransaction}
+        onDeleteSelected={handleDeleteSelected}
+        onExtend={handleExtend}
       />
 
       {/* MODAL */}
