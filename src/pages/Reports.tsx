@@ -1,86 +1,82 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { useHistory } from "../context/HistoryContext";
+import apiClient from "../apiClient";
 
 const months = [
-  "Januari","Februari","Maret","April","Mei","Juni",
-  "Juli","Agustus","September","Oktober","November","Desember"
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
 ];
 
 export default function Reports() {
-  const { history } = useHistory();
-
-  const [type, setType] = useState<"transaksi"|"kunjungan">("transaksi");
+  const [type, setType] = useState<"transaksi" | "kunjungan">("transaksi");
   const [month, setMonth] = useState(new Date().getMonth());
   const [year, setYear] = useState(new Date().getFullYear());
+  const [reportData, setReportData] = useState<any[]>([]);
 
-  const filtered = history.filter(item=>{
-  const rawDate =
-    item.date ||
-    item.borrowDate ||
-    item.createdAt ||
-    item.returnDate;
+  useEffect(() => {
+    const fetchReport = async () => {
+      try {
+        const response = await apiClient.get('/reports', {
+          params: { type, month, year }
+        });
+        setReportData(response.data);
+      } catch (err) {
+        console.error("Gagal memuat laporan", err);
+      }
+    };
 
-  if(!rawDate) return false;
+    fetchReport();
+  }, [type, month, year]);
 
-  const d = new Date(rawDate);
+  const normalized = reportData.map(item => ({
+    ...item,
+    bookTitle: item.bookTitle || "-",
+    activity: item.activity || "-"
+  }));
 
-  return (
-    d.getMonth()===month &&
-    d.getFullYear()===year &&
-    item.category===type
-  );
-});
-
-const normalized = filtered.map(item=>({
-  ...item,
-  bookTitle: item.bookTitle || item.manualBookTitle || "-",
-  activity: item.activity || item.bookTitle || item.manualBookTitle || "-"
-}));
-
-  const statusColor = (status?:string)=>{
-    if(!status) return [230,230,230];
+  const statusColor = (status?: string): [number, number, number] => {
+    if (!status) return [230, 230, 230];
 
     const s = status.toLowerCase();
 
-    if(s.includes("meminjam")) return [219,234,254];
-    if(s.includes("tepat")) return [220,252,231];
-    if(s.includes("terlambat")) return [254,226,226];
-    if(s.includes("kunjungan")) return [219,234,254];
+    if (s.includes("meminjam")) return [219, 234, 254];
+    if (s.includes("tepat")) return [220, 252, 231];
+    if (s.includes("terlambat")) return [254, 226, 226];
+    if (s.includes("kunjungan")) return [219, 234, 254];
 
-    return [230,230,230];
+    return [230, 230, 230];
   };
 
   const downloadPDF = () => {
     const doc = new jsPDF();
 
     /* ===== HEADER MODERN ===== */
-    doc.setFillColor(37,99,235);
-    doc.rect(0,0,220,4,"F");
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 0, 220, 4, "F");
 
-    doc.setFont("helvetica","bold");
-    doc.setTextColor(30,41,59);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 41, 59);
     doc.setFontSize(16);
-    doc.text("Laporan Perpustakaan",20,18);
+    doc.text("Laporan Perpustakaan", 20, 18);
 
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`${months[month]} ${year}`,190,15,{align:"right"});
+    doc.text(`${months[month]} ${year}`, 190, 15, { align: "right" });
     doc.text(
-      type==="transaksi"?"Riwayat Transaksi":"Riwayat Kunjungan",
-      190,22,
-      {align:"right"}
+      type === "transaksi" ? "Riwayat Transaksi" : "Riwayat Kunjungan",
+      190, 22,
+      { align: "right" }
     );
 
     doc.setDrawColor(220);
-    doc.line(20,28,190,28);
+    doc.line(20, 28, 190, 28);
 
     /* ===== TABLE ===== */
-    autoTable(doc,{
-      startY:35,
-      head:[["Tanggal","Nama","Role","Aktivitas","Status","Keterangan"]],
-      body: normalized.map(item=>{
+    autoTable(doc, {
+      startY: 35,
+      head: [["Tanggal", "Nama", "Role", "Aktivitas", "Status", "Keterangan"]],
+      body: normalized.map(item => {
         const d = new Date(item.date);
         return [
           d.toLocaleDateString("id-ID"),
@@ -91,17 +87,17 @@ const normalized = filtered.map(item=>({
           item.description || "-"
         ];
       }),
-      styles:{
-        fontSize:10,
-        cellPadding:6,
+      styles: {
+        fontSize: 10,
+        cellPadding: 6,
       },
-      headStyles:{
-        fillColor:[241,245,249],
-        textColor:[30,41,59],
-        fontStyle:"bold"
+      headStyles: {
+        fillColor: [241, 245, 249],
+        textColor: [30, 41, 59],
+        fontStyle: "bold"
       },
-      didParseCell: (data)=>{
-        if(data.section==="body" && data.column.index===4){
+      didParseCell: (data) => {
+        if (data.section === "body" && data.column.index === 4) {
           const status = data.cell.raw as string;
           const c = statusColor(status);
           data.cell.styles.fillColor = c;
@@ -113,7 +109,7 @@ const normalized = filtered.map(item=>({
     const pageHeight = doc.internal.pageSize.height;
 
     doc.setDrawColor(230);
-    doc.line(20,pageHeight-20,190,pageHeight-20);
+    doc.line(20, pageHeight - 20, 190, pageHeight - 20);
 
     doc.setFontSize(9);
     doc.setTextColor(120);
@@ -121,18 +117,18 @@ const normalized = filtered.map(item=>({
     doc.text(
       `Dicetak otomatis oleh sistem • ${new Date().toLocaleString("id-ID")}`,
       20,
-      pageHeight-10
+      pageHeight - 10
     );
 
     doc.text(
       "Perpustakaan Digital",
       190,
-      pageHeight-10,
-      {align:"right"}
+      pageHeight - 10,
+      { align: "right" }
     );
 
     /* ===== SAVE ===== */
-    doc.save(`laporan-${type}-${month+1}-${year}.pdf`);
+    doc.save(`laporan-${type}-${month + 1}-${year}.pdf`);
   };
 
   return (
@@ -148,7 +144,7 @@ const normalized = filtered.map(item=>({
         {/* TYPE */}
         <select
           value={type}
-          onChange={e=>setType(e.target.value as any)}
+          onChange={e => setType(e.target.value as any)}
           className="px-4 py-2 rounded-xl border text-sm"
         >
           <option value="transaksi">Riwayat Transaksi</option>
@@ -158,10 +154,10 @@ const normalized = filtered.map(item=>({
         {/* MONTH */}
         <select
           value={month}
-          onChange={e=>setMonth(Number(e.target.value))}
+          onChange={e => setMonth(Number(e.target.value))}
           className="px-4 py-2 rounded-xl border text-sm"
         >
-          {months.map((m,i)=>(
+          {months.map((m, i) => (
             <option key={i} value={i}>{m}</option>
           ))}
         </select>
@@ -169,10 +165,10 @@ const normalized = filtered.map(item=>({
         {/* YEAR */}
         <select
           value={year}
-          onChange={e=>setYear(Number(e.target.value))}
+          onChange={e => setYear(Number(e.target.value))}
           className="px-4 py-2 rounded-xl border text-sm"
         >
-          {[2024,2025,2026,2027].map(y=>(
+          {[2024, 2025, 2026, 2027].map(y => (
             <option key={y}>{y}</option>
           ))}
         </select>
@@ -189,7 +185,7 @@ const normalized = filtered.map(item=>({
 
       {/* PREVIEW INFO */}
       <div className="text-sm text-slate-500">
-        Total data: {filtered.length}
+        Total data: {reportData.length}
       </div>
 
     </div>
