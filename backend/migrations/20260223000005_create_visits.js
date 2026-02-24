@@ -3,7 +3,11 @@ exports.up = function (knex) {
         table.increments('id').primary();
         table.string('name').notNullable();
         table.string('nis').notNullable();
+        table.string('kelas').nullable();
+        table.string('chosing').notNullable().defaultTo('Siswa');
+        table.string('purpose').notNullable().defaultTo('Membaca');
         table.date('date').notNullable();
+        table.string('time').notNullable();
     });
 };
 

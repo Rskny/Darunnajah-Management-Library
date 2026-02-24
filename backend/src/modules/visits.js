@@ -42,7 +42,11 @@ router.get('/', authenticateToken, async (req, res) => {
  *             properties:
  *               name: { type: string }
  *               nis: { type: string }
+ *               kelas: { type: string }
+ *               chosing: { type: string }
+ *               purpose: { type: string }
  *               date: { type: string, format: date }
+ *               time: { type: string }
  *     responses:
  *       201:
  *         description: Kunjungan berhasil dicatat
@@ -50,8 +54,8 @@ router.get('/', authenticateToken, async (req, res) => {
 // Rekam pengunjung tamu baru
 router.post('/', authenticateToken, async (req, res) => {
     try {
-        const { name, nis, date } = req.body;
-        const [id] = await db('visits').insert({ name, nis, date });
+        const { name, nis, kelas, chosing, purpose, date, time } = req.body;
+        const [id] = await db('visits').insert({ name, nis, kelas, chosing, purpose, date, time });
         res.status(201).json({ message: 'Kunjungan berhasil dicatat', id });
     } catch (error) {
         res.status(500).json({ error: 'Gagal mencatat kunjungan', detail: error.message });

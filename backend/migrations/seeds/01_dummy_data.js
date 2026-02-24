@@ -48,10 +48,10 @@ exports.seed = async function (knex) {
 
     // Inserts dummy visits
     await knex('visits').insert([
-        { id: 1, name: 'Siswa A', nis: '10001', date: '2026-02-24' },
-        { id: 2, name: 'Siswa C', nis: '10003', date: '2026-02-24' },
-        { id: 3, name: 'Siswa D', nis: '10004', date: '2026-02-23' },
-        { id: 4, name: 'Siswa B', nis: '10002', date: '2026-02-23' },
-        { id: 5, name: 'Siswa E', nis: '10005', date: '2026-02-22' }
+        { id: 1, name: 'Siswa A', nis: '10001', kelas: 'X-A', chosing: 'Siswa', purpose: 'Membaca', date: '2026-02-24', time: '08:00' },
+        { id: 2, name: 'Siswa C', nis: '10003', kelas: 'XI-A', chosing: 'Siswa', purpose: 'Meminjam', date: '2026-02-24', time: '09:00' },
+        { id: 3, name: 'Siswa D', nis: '10004', kelas: 'XI-B', chosing: 'Siswa', purpose: 'Mengembalikan', date: '2026-02-23', time: '10:00' },
+        { id: 4, name: 'Siswa B', nis: '10002', kelas: 'X-B', chosing: 'Siswa', purpose: 'Belajar', date: '2026-02-23', time: '11:00' },
+        { id: 5, name: 'Siswa E', nis: '10005', kelas: 'XII-A', chosing: 'Siswa', purpose: 'Membaca', date: '2026-02-22', time: '12:00' }
     ]);
 };
