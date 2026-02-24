@@ -1,5 +1,8 @@
+import React from 'react';
 import { Routes, Route, Navigate } from "react-router-dom";
 import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Books from "./pages/Books";
 import DataAnggota from "./pages/DataAnggota";
@@ -29,6 +32,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
 
       <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
       <Route path="/visits" element={<DashboardLayout><Visits /></DashboardLayout>} />
@@ -36,13 +41,13 @@ export default function App() {
       <Route path="/anggota" element={<DashboardLayout><DataAnggota /></DashboardLayout>} />
       <Route path="/peminjaman" element={<DashboardLayout><Peminjaman /></DashboardLayout>} />
       <Route
-  path="/riwayat-transaksi"
-  element={<DashboardLayout><RiwayatTransaksi /></DashboardLayout>}
-/>
-    <Route
-  path="/riwayat-kunjungan"
-  element={<DashboardLayout><RiwayatKunjungan /></DashboardLayout>}
-/>
+        path="/riwayat-transaksi"
+        element={<DashboardLayout><RiwayatTransaksi /></DashboardLayout>}
+      />
+      <Route
+        path="/riwayat-kunjungan"
+        element={<DashboardLayout><RiwayatKunjungan /></DashboardLayout>}
+      />
       <Route path="/reports" element={<DashboardLayout><Reports /></DashboardLayout>} />
 
       <Route path="*" element={<Navigate to="/dashboard" />} />

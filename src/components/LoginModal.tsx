@@ -8,11 +8,11 @@ export default function LoginModal({ onClose, onSwitch }: any) {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [show,setShow]=useState(false);
+  const [show, setShow] = useState(false);
 
 
-  const handleLogin = () => {
-    const ok = login(username, password);
+  const handleLogin = async () => {
+    const ok = await login(username, password);
     if (ok) {
       onClose();
       navigate("/dashboard");
@@ -32,21 +32,21 @@ export default function LoginModal({ onClose, onSwitch }: any) {
           onChange={e => setUsername(e.target.value)}
         />
 
-<div className="relative">
-        <input
-  type={show?"text":"password"}
-  placeholder="Password"
-  className="border w-full p-2 rounded"
-  onChange={e=>setPassword(e.target.value)}
-/>
+        <div className="relative">
+          <input
+            type={show ? "text" : "password"}
+            placeholder="Password"
+            className="border w-full p-2 rounded"
+            onChange={e => setPassword(e.target.value)}
+          />
 
-<span
-  onClick={()=>setShow(!show)}
-  className="absolute right-3 top-2 cursor-pointer text-sm"
->
-  {show?"🙈":"👁"}
-</span>
-</div>
+          <span
+            onClick={() => setShow(!show)}
+            className="absolute right-3 top-2 cursor-pointer text-sm"
+          >
+            {show ? "🙈" : "👁"}
+          </span>
+        </div>
 
         <button
           onClick={handleLogin}

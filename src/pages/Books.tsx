@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import useLocalStorage from "../hooks/useLocalStorage";
+import React, { useState, useEffect } from 'react';
+import apiClient from '../apiClient';
 import BookCard from '../components/books/BookCard';
 import BookFormModal from '../components/books/BookFormModal';
 import BorrowForm from "../components/BorrowForm";
@@ -7,39 +7,51 @@ import { Book } from '../types';
 
 const Books: React.FC = () => {
 
-  // STORAGE
-  const [books, setBooks] = useLocalStorage<Book[]>("books", []);
+  const [books, setBooks] = useState<Book[]>([]);
+
+  const fetchBooks = async () => {
+    try {
+      const res = await apiClient.get('/books');
+      setBooks(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchBooks();
+  }, []);
 
   // SELECT MODE
-  const [showSelect,setShowSelect]=useState(false);
-  const [selected,setSelected]=useState<string[]>([]);
+  const [showSelect, setShowSelect] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
 
   // MODAL
   const [showForm, setShowForm] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
   // ADD BOOK
-  const handleAddBook = (book: Omit<Book, 'id' | 'available'>) => {
-    setBooks(prev => [
-      ...prev,
-      {
-        ...book,
-        id: crypto.randomUUID(),
-        available: true
-      }
-    ]);
-    setShowForm(false);
+  const handleAddBook = async (book: Omit<Book, 'id' | 'available'>) => {
+    try {
+      await apiClient.post('/books', book);
+      fetchBooks();
+      setShowForm(false);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // BULK IMPORT
-  const handleBulkAdd = (booksData: Omit<Book, 'id' | 'available'>[]) => {
-    const newBooks = booksData.map(b => ({
-      ...b,
-      id: crypto.randomUUID(),
-      available: true
-    }));
-    setBooks(prev => [...prev, ...newBooks]);
-    setShowForm(false);
+  const handleBulkAdd = async (booksData: Omit<Book, 'id' | 'available'>[]) => {
+    try {
+      for (const b of booksData) {
+        await apiClient.post('/books', b);
+      }
+      fetchBooks();
+      setShowForm(false);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // BORROW BOOK
@@ -54,20 +66,25 @@ const Books: React.FC = () => {
   };
 
   // DELETE SELECTED
-  const handleDeleteSelected = () => {
-    const filtered = books.filter(b => !selected.includes(b.id));
-    setBooks(filtered);
-    setSelected([]);
+  const handleDeleteSelected = async () => {
+    try {
+      for (const id of selected) {
+        await apiClient.delete(`/books/${id}`);
+      }
+      fetchBooks();
+      setSelected([]);
+    } catch (err) {
+      console.error(err);
+    }
   };
   React.useEffect(() => {
-  const syncBooks = () => {
-    const saved = localStorage.getItem("books");
-    if (saved) setBooks(JSON.parse(saved));
-  };
+    const syncBooks = () => {
+      fetchBooks();
+    };
 
-  window.addEventListener("booksUpdated", syncBooks);
-  return () => window.removeEventListener("booksUpdated", syncBooks);
-}, [setBooks]);
+    window.addEventListener("booksUpdated", syncBooks);
+    return () => window.removeEventListener("booksUpdated", syncBooks);
+  }, []);
 
 
   return (
@@ -88,7 +105,7 @@ const Books: React.FC = () => {
 
           {/* SELECT BUTTON */}
           <button
-            onClick={()=>{
+            onClick={() => {
               setShowSelect(!showSelect);
               setSelected([]);
             }}
@@ -98,7 +115,7 @@ const Books: React.FC = () => {
           </button>
 
           {/* DELETE BUTTON */}
-          {selected.length>0 && (
+          {selected.length > 0 && (
             <button
               onClick={handleDeleteSelected}
               className="px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-bold"
@@ -134,11 +151,11 @@ const Books: React.FC = () => {
                   type="checkbox"
                   className="absolute top-2 left-2 z-10 w-5 h-5"
                   checked={selected.includes(book.id)}
-                  onChange={()=>{
-                    setSelected(prev=>
+                  onChange={() => {
+                    setSelected(prev =>
                       prev.includes(book.id)
-                        ? prev.filter(x=>x!==book.id)
-                        : [...prev,book.id]
+                        ? prev.filter(x => x !== book.id)
+                        : [...prev, book.id]
                     )
                   }}
                 />

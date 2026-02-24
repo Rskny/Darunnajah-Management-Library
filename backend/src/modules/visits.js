@@ -58,4 +58,33 @@ router.post('/', authenticateToken, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/visits/{id}:
+ *   delete:
+ *     summary: Menghapus kunjungan
+ *     tags: [Visits]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Kunjungan berhasil dihapus
+ */
+// Hapus kunjungan
+router.delete('/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db('visits').where({ id }).del();
+        res.json({ message: 'Kunjungan berhasil dihapus' });
+    } catch (error) {
+        res.status(500).json({ error: 'Gagal menghapus kunjungan', detail: error.message });
+    }
+});
+
 module.exports = router;

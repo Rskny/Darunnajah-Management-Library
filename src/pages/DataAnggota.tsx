@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MemberFormModal from "../components/MemberFormModal";
-import useLocalStorage from "../hooks/useLocalStorage";
+import apiClient from "../apiClient";
 
 export interface Member {
   nama: string;
@@ -12,12 +12,25 @@ export interface Member {
 
 export default function DataAnggota() {
   const [open, setOpen] = useState(false);
-  const [members, setMembers] = useLocalStorage<Member[]>("members", []);
+  const [members, setMembers] = useState<Member[]>([]);
+
+  const fetchMembers = async () => {
+    try {
+      const res = await apiClient.get('/members');
+      setMembers(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchMembers();
+  }, []);
 
   const [showSelect, setShowSelect] = useState(false);
   const [selected, setSelected] = useState<number[]>([]);
 
-  const toggleSelect = (index:number) => {
+  const toggleSelect = (index: number) => {
     setSelected(prev =>
       prev.includes(index)
         ? prev.filter(i => i !== index)
@@ -25,10 +38,18 @@ export default function DataAnggota() {
     );
   };
 
-  const deleteSelected = () => {
-    setMembers(prev => prev.filter((_,i)=> !selected.includes(i)));
-    setSelected([]);
-    setShowSelect(false);
+  const deleteSelected = async () => {
+    try {
+      for (const index of selected) {
+        const memberId = members[index] as any;
+        if (memberId && memberId.id) await apiClient.delete(`/members/${memberId.id}`);
+      }
+      fetchMembers();
+      setSelected([]);
+      setShowSelect(false);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -38,13 +59,13 @@ export default function DataAnggota() {
       <div className="absolute top-8 right-8 flex gap-3">
 
         <button
-          onClick={()=> setShowSelect(!showSelect)}
+          onClick={() => setShowSelect(!showSelect)}
           className="bg-slate-200 px-4 py-2 rounded-full text-xs font-bold"
         >
           Select
         </button>
 
-        {showSelect && selected.length>0 && (
+        {showSelect && selected.length > 0 && (
           <button
             onClick={deleteSelected}
             className="bg-red-500 text-white px-4 py-2 rounded-full text-xs font-bold"
@@ -54,7 +75,7 @@ export default function DataAnggota() {
         )}
 
         <button
-          onClick={()=> setOpen(true)}
+          onClick={() => setOpen(true)}
           className="bg-[#3F5EA8] text-white px-6 py-3 rounded-full text-xs font-semibold shadow-lg"
         >
           + INPUT DATA
@@ -63,7 +84,7 @@ export default function DataAnggota() {
 
       <h1 className="text-xl font-bold mb-6">Data Anggota</h1>
 
-      {members.length===0 ? (
+      {members.length === 0 ? (
         <div className="bg-white rounded-xl p-6 text-sm text-slate-400">
           Belum ada data anggota
         </div>
@@ -83,7 +104,7 @@ export default function DataAnggota() {
             </thead>
 
             <tbody>
-              {members.map((m,i)=>(
+              {members.map((m, i) => (
                 <tr key={i} className="border-t">
 
                   {showSelect && (
@@ -91,12 +112,12 @@ export default function DataAnggota() {
                       <input
                         type="checkbox"
                         checked={selected.includes(i)}
-                        onChange={()=> toggleSelect(i)}
+                        onChange={() => toggleSelect(i)}
                       />
                     </td>
                   )}
 
-                  <td>{i+1}</td>
+                  <td>{i + 1}</td>
                   <td>{m.nama}</td>
                   <td className="text-center">{m.nis}</td>
                   <td className="text-center">{m.kelas}</td>
@@ -111,10 +132,17 @@ export default function DataAnggota() {
 
       {open && (
         <MemberFormModal
-          onClose={()=> setOpen(false)}
-          onImport={(data)=>{
-            setMembers(prev=> [...prev,...data]);
-            setOpen(false);
+          onClose={() => setOpen(false)}
+          onImport={async (data) => {
+            try {
+              for (const m of data) {
+                await apiClient.post('/members', m);
+              }
+              fetchMembers();
+              setOpen(false);
+            } catch (error) {
+              console.error(error);
+            }
           }}
         />
       )}

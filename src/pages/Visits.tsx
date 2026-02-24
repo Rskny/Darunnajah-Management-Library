@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import VisitFormModal from "../components/visits/VisitFormModal";
+import apiClient from "../apiClient";
 import { useHistory } from "../context/HistoryContext";
 
 interface Visit {
@@ -19,62 +20,44 @@ const Visits: React.FC = () => {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
-  // LOAD DATA (dummy + localStorage)
-  useEffect(() => {
-    const saved = localStorage.getItem("visits");
-
-    if (saved) {
-      setVisits(JSON.parse(saved));
-    } else {
-      const dummy: Visit[] = [
-        { id:1,name:"Ahmad",kelas:"10A",chosing:"siswa",purpose:"Membaca",date:"01/02/2026",time:"08.10"},
-        { id:2,name:"Budi",kelas:"11B",chosing:"siswa",purpose:"Pinjam Buku",date:"02/02/2026",time:"09.00"},
-        { id:3,name:"Citra",kelas:"12A",chosing:"siswa",purpose:"Belajar",date:"03/02/2026",time:"09.30"},
-        { id:4,name:"Dina",kelas:"10C",chosing:"siswa",purpose:"Diskusi",date:"05/02/2026",time:"10.00"},
-        { id:5,name:"Eka",kelas:"11A",chosing:"siswa",purpose:"Mengerjakan Tugas",date:"07/02/2026",time:"11.15"},
-        { id:6,name:"Farhan",kelas:"10B",chosing:"siswa",purpose:"Membaca",date:"10/02/2026",time:"08.45"},
-        { id:7,name:"Gita",kelas:"12C",chosing:"siswa",purpose:"Referensi",date:"12/02/2026",time:"09.20"},
-        { id:8,name:"Hadi",kelas:"11C",chosing:"siswa",purpose:"Pinjam Buku",date:"15/02/2026",time:"10.40"},
-
-        { id:9,name:"Intan",kelas:"10A",chosing:"siswa",purpose:"Membaca",date:"03/03/2026",time:"08.30"},
-        { id:10,name:"Joko",kelas:"12B",chosing:"siswa",purpose:"Belajar",date:"10/03/2026",time:"09.10"},
-        { id:11,name:"Kiki",kelas:"11A",chosing:"siswa",purpose:"Diskusi",date:"15/03/2026",time:"10.00"},
-      ];
-
-      setVisits(dummy);
-      localStorage.setItem("visits", JSON.stringify(dummy));
+  const fetchVisits = async () => {
+    try {
+      const res = await apiClient.get('/visits');
+      setVisits(res.data);
+    } catch (err) {
+      console.error(err);
     }
+  };
+
+  useEffect(() => {
+    fetchVisits();
   }, []);
 
-  // SAVE otomatis tiap berubah
-  useEffect(() => {
-    localStorage.setItem("visits", JSON.stringify(visits));
-  }, [visits]);
-
   // TAMBAH VISIT
-  const handleAddVisit = (data: Omit<Visit, "id" | "date" | "time">) => {
-    const now = new Date();
+  const handleAddVisit = async (data: Omit<Visit, "id" | "date" | "time">) => {
+    try {
+      const now = new Date();
+      await apiClient.post('/visits', {
+        name: data.name,
+        nis: data.chosing === 'siswa' ? 'N/A' : data.chosing, // Adjust according to your form data
+        date: now.toISOString().split('T')[0]
+      });
+      fetchVisits();
 
-    const newVisit: Visit = {
-      id: Date.now(),
-      date: now.toLocaleDateString("id-ID"),
-      time: now.toLocaleTimeString("id-ID"),
-      ...data,
-    };
+      addHistory({
+        id: Date.now(),
+        date: new Date(),
+        name: data.name,
+        role: data.chosing,
+        activity: "Kunjungan",
+        category: "kunjungan",
+        description: data.purpose,
+      });
 
-    setVisits(prev => [newVisit, ...prev]);
-
-    addHistory({
-      id: Date.now(),
-      date: new Date(),
-      name: data.name,
-      role: data.chosing,
-      activity: "Kunjungan",
-      category: "kunjungan",
-      description: data.purpose,
-    });
-
-    setShowModal(false);
+      setShowModal(false);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // CHECKBOX
@@ -95,10 +78,16 @@ const Visits: React.FC = () => {
   };
 
   // DELETE
-  const deleteSelected = () => {
-    const filtered = visits.filter(v => !selectedIds.includes(v.id));
-    setVisits(filtered);
-    setSelectedIds([]);
+  const deleteSelected = async () => {
+    try {
+      for (const id of selectedIds) {
+        await apiClient.delete(`/visits/${id}`);
+      }
+      fetchVisits();
+      setSelectedIds([]);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (

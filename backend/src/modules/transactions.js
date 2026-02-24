@@ -114,4 +114,33 @@ router.put('/:id', authenticateToken, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/transactions/{id}:
+ *   delete:
+ *     summary: Menghapus transaksi
+ *     tags: [Transactions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Transaksi berhasil dihapus
+ */
+// Hapus transaksi
+router.delete('/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db('transactions').where({ id }).del();
+        res.json({ message: 'Transaksi berhasil dihapus' });
+    } catch (error) {
+        res.status(500).json({ error: 'Gagal menghapus transaksi', detail: error.message });
+    }
+});
+
 module.exports = router;
