@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from "react";
 import LendingModal from "../components/LendingModal";
 import TransactionTable from "../components/TransactionTable";
+import PageHeader from "../components/PageHeader";
 import apiClient from "../apiClient";
 
 export default function Peminjaman() {
   const [modalOpen, setModalOpen] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [selectMode, setSelectMode] = useState(false);
+
+  const [sort, setSort] = useState<"asc" | "desc">("desc");
+  const [limit, setLimit] = useState(10);
 
   const fetchTransactions = async () => {
     try {
@@ -24,107 +29,81 @@ export default function Peminjaman() {
     };
   }, []);
 
-  /* ================= ACTION ================= */
-  const updateTransaction = async (
-    id: string | number,
-    action: "return" | "extend"
-  ) => {
+  const updateTransaction = async (id: any, action: "return" | "extend") => {
     try {
       if (action === "return") {
-        await apiClient.put(`/transactions/${id}`, { status: "Dikembalikan" });
-      } else if (action === "extend") {
-        // Option to extend via backend here
+        await apiClient.put(`/transactions/${id}`, {
+          status: "Dikembalikan",
+        });
       }
       fetchTransactions();
-      window.dispatchEvent(new Event("transactionsUpdated"));
     } catch (err) {
       console.error(err);
     }
   };
 
-  const handleDeleteSelected = async (selectedIds: string[]) => {
-    try {
-      for (const id of selectedIds) {
-        await apiClient.delete(`/transactions/${id}`);
-      }
-      fetchTransactions();
-      window.dispatchEvent(new Event("transactionsUpdated"));
-    } catch (err) {
-      console.error(err);
+  const handleDeleteSelected = async (ids: string[]) => {
+    for (const id of ids) {
+      await apiClient.delete(`/transactions/${id}`);
     }
+    fetchTransactions();
   };
 
   const handleExtend = async (id: string, newDate: string) => {
-    try {
-      await apiClient.put(`/transactions/${id}`, { dueDate: newDate });
-      fetchTransactions();
-      window.dispatchEvent(new Event("transactionsUpdated"));
-    } catch (err) {
-      console.error(err);
-    }
+    await apiClient.put(`/transactions/${id}`, {
+      dueDate: newDate,
+    });
+    fetchTransactions();
   };
 
-  /* ================= SUBMIT MANUAL ================= */
-  const handleSubmit = async (borrowerData: any, days: number, manualBookTitle?: string) => {
-    try {
-      // Find bookId from books (we assume the form provides manualBookTitle or something)
-      // Since backend requires bookId, we mock it or if borrowerData provides it. Let's send bookId 1 as fallback or look it up if needed.
-      const bookDataRes = await apiClient.get('/books');
-      const bookTitleRaw = manualBookTitle || borrowerData.manualBookTitle || borrowerData.bookTitle;
-      const foundBook = bookDataRes.data.find((b: any) => b.title === bookTitleRaw);
+  const sorted = [...transactions]
+    .filter((t) => t.status === "Dipinjam")
+    .sort((a, b) => (sort === "asc" ? a.id - b.id : b.id - a.id))
+    .slice(0, limit);
 
-      if (!foundBook) {
-        alert("Buku tidak ditemukan di database!");
-        return;
-      }
-
-      const today = new Date();
-      await apiClient.post("/transactions", {
-        bookId: foundBook.id,
-        studentName: borrowerData.name,
-        status: "Dipinjam",
-        borrowDate: today.toISOString().split('T')[0]
-      });
-
-      fetchTransactions();
-      window.dispatchEvent(new Event("transactionsUpdated"));
-      setModalOpen(false);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  /* ================= UI ================= */
   return (
     <div className="px-8 pt-6 pb-4">
 
-      {/* HEADER */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-slate-800">
-          Data Peminjaman
-        </h1>
+      <PageHeader
+        title="Data Peminjaman"
+        subtitle="Daftar transaksi buku yang sedang dipinjam"
+        onSortChange={setSort}
+        onLimitChange={setLimit}
+        defaultOrder="desc"
+        defaultLimit={10}
+        right={
+          <div className="flex gap-3">
 
-        <button
-          onClick={() => setModalOpen(true)}
-          className="bg-[#3F5EA8] text-white px-6 py-2 rounded-full text-xs font-semibold"
-        >
-          + INPUT DATA
-        </button>
-      </div>
+            <button
+              onClick={() => setSelectMode(!selectMode)}
+              className="px-4 py-2 bg-slate-200 rounded-xl text-xs font-bold"
+            >
+              {selectMode ? "Cancel" : "Select"}
+            </button>
 
-      {/* TABLE */}
+            <button
+              onClick={() => setModalOpen(true)}
+              className="bg-[#3F5EA8] text-white px-6 py-2 rounded-full text-xs font-semibold"
+            >
+              + INPUT DATA
+            </button>
+
+          </div>
+        }
+      />
+
       <TransactionTable
-        transactions={transactions.filter(t => t.status === "Dipinjam")}
+        transactions={sorted}
+        selectMode={selectMode}
         onAction={updateTransaction}
         onDeleteSelected={handleDeleteSelected}
         onExtend={handleExtend}
       />
 
-      {/* MODAL */}
       {modalOpen && (
         <LendingModal
           onClose={() => setModalOpen(false)}
-          onSubmit={handleSubmit}
+          onSubmit={() => {}}
         />
       )}
     </div>

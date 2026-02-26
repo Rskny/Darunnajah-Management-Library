@@ -1,18 +1,9 @@
 import React, { useState } from "react";
 
-export default function TransactionTable({ transactions, onAction, onDeleteSelected, onExtend }: any) {
+export default function TransactionTable({ transactions, onAction, onExtend }: any) {
 
-  const [showSelect, setShowSelect] = useState(false);
-  const [selected, setSelected] = useState<string[]>([]);
   const [extendId, setExtendId] = useState<string | null>(null);
   const [newDate, setNewDate] = useState("");
-
-  const toggle = (id: string) => {
-    setSelected(prev => prev.includes(id)
-      ? prev.filter(x => x !== id)
-      : [...prev, id]
-    );
-  };
 
   const calcLate = (dueDate: string) => {
     const today = new Date();
@@ -21,16 +12,6 @@ export default function TransactionTable({ transactions, onAction, onDeleteSelec
     return diff > 0 ? diff : 0;
   };
 
-  /* delete selected */
-  const handleDelete = () => {
-    if (onDeleteSelected) {
-      onDeleteSelected(selected);
-      setSelected([]);
-      setShowSelect(false);
-    }
-  };
-
-  /* submit extend */
   const submitExtend = (id: string) => {
     if (!newDate) return;
 
@@ -42,119 +23,82 @@ export default function TransactionTable({ transactions, onAction, onDeleteSelec
   };
 
   return (
-    <>
-      {/* ACTION BAR */}
-      <div className="mb-3 flex gap-3">
+    <table className="w-full text-sm border rounded-xl overflow-hidden">
+      <thead className="bg-slate-100">
+        <tr>
+          <th>No</th>
+          <th>Buku</th>
+          <th>Peminjam</th>
+          <th>Role</th>
+          <th>Pinjam</th>
+          <th>Jatuh Tempo</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
 
-        <button
-          onClick={() => {
-            setShowSelect(!showSelect);
-            setSelected([]);
-          }}
-          className="px-4 py-1 bg-slate-200 rounded-lg text-xs font-bold"
-        >
-          {showSelect ? "Cancel" : "Select"}
-        </button>
+      <tbody>
+        {transactions.map((t: any, i: number) => {
+          const late = calcLate(t.dueDate);
 
-        {selected.length > 0 && (
-          <button
-            onClick={handleDelete}
-            className="px-4 py-1 bg-red-500 text-white rounded-lg text-xs font-bold"
-          >
-            Hapus ({selected.length})
-          </button>
-        )}
-      </div>
+          return (
+            <tr key={t.id} className="text-center border-t">
 
-      {/* TABLE */}
-      <table className="w-full text-sm border rounded-xl overflow-hidden">
-        <thead className="bg-slate-100">
-          <tr>
-            {showSelect && <th></th>}
-            <th>No</th>
-            <th>Buku</th>
-            <th>Peminjam</th>
-            <th>Role</th>
-            <th>Pinjam</th>
-            <th>Jatuh Tempo</th>
-            <th>Status</th>
-            <th>Aksi</th>
-          </tr>
-        </thead>
+              <td>{i + 1}</td>
+              <td>{t.bookTitle}</td>
+              <td>{t.studentName}</td>
+              <td className="capitalize">{t.role}</td>
+              <td>{new Date(t.borrowDate).toLocaleDateString("id-ID")}</td>
+              <td>{new Date(t.dueDate).toLocaleDateString("id-ID")}</td>
 
-        <tbody>
-          {transactions.map((t: any, i: number) => {
-            const late = calcLate(t.dueDate);
+              <td>
+                {late > 0
+                  ? <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs">Telat {late}</span>
+                  : <span className="bg-green-100 text-green-600 px-3 py-1 rounded-full text-xs">Dipinjam</span>
+                }
+              </td>
 
-            return (
-              <tr key={t.id} className="text-center border-t">
-
-                {showSelect && (
-                  <td>
+              <td>
+                {extendId === t.id ? (
+                  <div className="flex gap-1 justify-center">
                     <input
-                      type="checkbox"
-                      checked={selected.includes(t.id)}
-                      onChange={() => toggle(t.id)}
+                      type="date"
+                      value={newDate}
+                      onChange={e => setNewDate(e.target.value)}
+                      className="border px-2 text-xs rounded"
                     />
-                  </td>
+                    <button
+                      onClick={() => submitExtend(t.id)}
+                      className="px-2 text-xs bg-blue-500 text-white rounded"
+                    >
+                      OK
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 justify-center">
+
+                    <button
+                      onClick={() => setExtendId(t.id)}
+                      className="px-3 py-1 text-xs rounded bg-yellow-100 text-yellow-700 font-bold"
+                    >
+                      Perpanjang
+                    </button>
+
+                    <button
+                      onClick={() => onAction(t.id, "return")}
+                      className="px-3 py-1 text-xs rounded bg-green-100 text-green-700 font-bold"
+                    >
+                      Return
+                    </button>
+
+                  </div>
                 )}
+              </td>
 
-                <td>{i + 1}</td>
-                <td>{t.bookTitle}</td>
-                <td>{t.studentName}</td>
-                <td className="capitalize">{t.role}</td>
-                <td>{new Date(t.borrowDate).toLocaleDateString("id-ID")}</td>
-                <td>{new Date(t.dueDate).toLocaleDateString("id-ID")}</td>
-
-                <td>
-                  {late > 0
-                    ? <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs">Telat {late}</span>
-                    : <span className="bg-green-100 text-green-600 px-3 py-1 rounded-full text-xs">Dipinjam</span>
-                  }
-                </td>
-
-                <td>
-                  {extendId === t.id ? (
-                    <div className="flex gap-1 justify-center">
-                      <input
-                        type="date"
-                        value={newDate}
-                        onChange={e => setNewDate(e.target.value)}
-                        className="border px-2 text-xs rounded"
-                      />
-                      <button
-                        onClick={() => submitExtend(t.id)}
-                        className="px-2 text-xs bg-blue-500 text-white rounded"
-                      >
-                        OK
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2 justify-center">
-
-                      <button
-                        onClick={() => setExtendId(t.id)}
-                        className="px-3 py-1 text-xs rounded bg-yellow-100 text-yellow-700 font-bold"
-                      >
-                        Perpanjang
-                      </button>
-
-                      <button
-                        onClick={() => onAction(t.id, "return")}
-                        className="px-3 py-1 text-xs rounded bg-green-100 text-green-700 font-bold"
-                      >
-                        Return
-                      </button>
-
-                    </div>
-                  )}
-                </td>
-
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
   );
 }
