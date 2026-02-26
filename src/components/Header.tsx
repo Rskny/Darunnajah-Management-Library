@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import SettingsModal from "./SettingsModal";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
+import { Icons } from "../constants/icons";
 
 const Header: React.FC = () => {
   const [openSettings, setOpenSettings] = useState(false);
@@ -22,7 +23,7 @@ const Header: React.FC = () => {
     avatar: ""
   };
 
-  /* ---------- CLOSE DROPDOWN OUTSIDE ---------- */
+  /* CLOSE DROPDOWN OUTSIDE */
   useEffect(() => {
     const close = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node))
@@ -32,13 +33,12 @@ const Header: React.FC = () => {
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  /* ---------- LOGOUT ---------- */
   const handleLogout = () => {
     logout();
     navigate("/");
   };
 
-  /* ---------- SEARCH PLACEHOLDER ---------- */
+  /* SEARCH PLACEHOLDER */
   const getPlaceholder = () => {
     if (path.includes("books")) return "Cari buku...";
     if (path.includes("anggota")) return "Cari anggota...";
@@ -50,61 +50,62 @@ const Header: React.FC = () => {
 
   const hideSearch = path.includes("laporan");
 
-  /* ---------- SYNC URL SEARCH ---------- */
+  /* SYNC URL SEARCH */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const q = params.get("search") || "";
     setSearch(q);
   }, [location.search]);
 
-  /* ---------- DEBOUNCE ---------- */
   useEffect(() => {
     const timeout = setTimeout(() => {
       const params = new URLSearchParams(location.search);
-
       if (search) params.set("search", search);
       else params.delete("search");
-
       navigate(`${path}?${params.toString()}`, { replace: true });
     }, 400);
-
     return () => clearTimeout(timeout);
   }, [search]);
 
-  /* ---------- TITLE ---------- */
-  const formatTitle = (p: string) =>
-    p === "/" ? "Dashboard" : p.replace("/", "").replace(/-/g, " ");
+  /* ICON BASED ON PAGE */
+  const getPageIcon = () => {
+    if (path.includes("books")) return <Icons.Books />;
+    if (path.includes("anggota")) return <Icons.Users />;
+    if (path.includes("riwayat")) return <Icons.History />;
+    if (path.includes("peminjaman")) return <Icons.Upload />;
+    return <Icons.Home />;
+  };
 
-  /* ---------- AVATAR INITIAL ---------- */
   const initial =
     safeUser?.name?.charAt(0)?.toUpperCase() ||
     safeUser?.username?.charAt(0)?.toUpperCase() ||
     "A";
 
-  /* ---------- UI ---------- */
   return (
-    <header className="w-full flex justify-between items-center px-8 py-4 bg-white border-b shadow-sm relative z-40">
+    <header className="w-full flex justify-between items-center px-8 py-4 bg-white border-b border-slate-200 shadow-sm relative z-40">
 
-      {/* TITLE */}
-      <h1 className="text-2xl font-bold text-slate-800 capitalize tracking-wide">
-        {formatTitle(path)}
-      </h1>
+      {/* LEFT ICON TITLE */}
+      <div className="flex items-center gap-4 text-slate-700">
+        <div className="p-3 rounded-2xl bg-slate-100">
+          {getPageIcon()}
+        </div>
+      </div>
 
-      {/* RIGHT */}
-      <div className="flex items-center gap-5">
+      {/* RIGHT SIDE */}
+      <div className="flex items-center gap-6">
 
         {/* SEARCH */}
         {!hideSearch && (
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-              🔍
-            </span>
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+              <Icons.Search />
+            </div>
 
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={getPlaceholder()}
-              className="pl-11 pr-4 py-2.5 rounded-2xl bg-slate-100 focus:bg-white border border-transparent focus:border-blue-400 outline-none w-72 transition shadow-sm"
+              className="pl-11 pr-4 py-2.5 rounded-2xl bg-slate-100 focus:bg-white border border-transparent focus:border-slate-300 outline-none w-72 transition"
             />
           </div>
         )}
@@ -116,29 +117,17 @@ const Header: React.FC = () => {
             onClick={() => setOpenMenu(!openMenu)}
             className="flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-slate-100 transition"
           >
-            {/* AVATAR */}
             {safeUser.avatar ? (
               <img
                 src={safeUser.avatar}
-                className="w-10 h-10 rounded-xl object-cover border shadow-sm"
+                className="w-10 h-10 rounded-xl object-cover border"
               />
             ) : (
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-bold shadow">
+              <div className="w-10 h-10 rounded-xl bg-slate-700 text-white flex items-center justify-center font-bold">
                 {initial}
               </div>
             )}
 
-            {/* NAME */}
-            <div className="text-left hidden sm:block">
-              <p className="text-sm font-bold text-slate-800">
-                {safeUser.name}
-              </p>
-              <p className="text-[10px] text-slate-400 uppercase tracking-widest">
-                admin
-              </p>
-            </div>
-
-            {/* CHEVRON */}
             <span className={`text-slate-400 text-xs transition ${openMenu ? "rotate-180" : ""}`}>
               ▼
             </span>
@@ -146,11 +135,10 @@ const Header: React.FC = () => {
 
           {/* DROPDOWN */}
           {openMenu && (
-            <div className="absolute right-0 mt-3 w-64 bg-white border rounded-2xl shadow-2xl overflow-hidden z-[9999] animate-fade-in">
+            <div className="absolute right-0 mt-3 w-60 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-[9999]">
 
-              {/* USER INFO */}
               <div className="px-5 py-4">
-                <p className="font-bold text-slate-800 text-sm">
+                <p className="font-semibold text-slate-800 text-sm">
                   {safeUser.name}
                 </p>
                 <p className="text-xs text-slate-400">
@@ -158,9 +146,8 @@ const Header: React.FC = () => {
                 </p>
               </div>
 
-              <div className="border-t"/>
+              <div className="border-t border-slate-100"/>
 
-              {/* SETTINGS */}
               <button
                 onClick={()=>{
                   setOpenMenu(false);
@@ -168,13 +155,12 @@ const Header: React.FC = () => {
                 }}
                 className="w-full flex items-center gap-3 px-5 py-3 text-sm hover:bg-slate-50 transition"
               >
-                ⚙️ Pengaturan
+                ⚙ Pengaturan
               </button>
 
-              {/* LOGOUT */}
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-5 py-3 text-sm text-red-600 hover:bg-red-50 transition"
+                className="w-full flex items-center gap-3 px-5 py-3 text-sm text-red-500 hover:bg-red-50 transition"
               >
                 ⏻ Logout
               </button>
@@ -185,7 +171,6 @@ const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* SETTINGS MODAL */}
       {openSettings && (
         <SettingsModal onClose={() => setOpenSettings(false)} />
       )}

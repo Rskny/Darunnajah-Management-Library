@@ -1,5 +1,6 @@
 import {useState,useEffect} from "react";
 import PageHeader from "../components/PageHeader";
+import TableBox from "../components/ui/TableBox";
 import apiClient from "../apiClient";
 
 export default function RiwayatKunjungan(){
@@ -39,8 +40,9 @@ const sorted=[...data]
 .slice(0,limit);
 
 return(
-<div className="p-8">
+<div className="p-8 space-y-8">
 
+<div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
 <PageHeader
 title="Riwayat Kunjungan"
 subtitle="Data histori kunjungan"
@@ -58,41 +60,47 @@ className="px-4 py-2 bg-slate-200 rounded-xl text-xs font-bold">
 <button
 onClick={deleteSelected}
 className="px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-bold">
-Hapus
+Hapus ({selected.length})
 </button>
 )}
 </>
 }
 />
-
-{sorted.length===0?(
-<div className="bg-white rounded-xl p-6 text-sm text-slate-400">
-Belum ada data kunjungan
 </div>
-):(
-<div className="bg-white rounded-xl shadow overflow-hidden">
+
+<TableBox>
 <table className="w-full text-sm">
-<thead className="bg-slate-100">
+
+<thead className="bg-slate-100 text-xs uppercase text-slate-600">
 <tr className="text-center">
 {selectMode&&(
-<th className="p-3">
+<th className="p-4 w-10">
 <input type="checkbox"
-checked={selected.length===sorted.length}
+checked={selected.length===sorted.length&&sorted.length>0}
 onChange={toggleAll}/>
 </th>
 )}
-<th className="p-3">No</th>
-<th className="p-3">Tanggal</th>
-<th>Nama</th>
-<th>Role</th>
-<th>Kegiatan</th>
-<th>Status</th>
+<th className="p-4 w-14">No</th>
+<th className="p-4">Tanggal</th>
+<th className="p-4 text-left">Nama</th>
+<th className="p-4 text-left">Role</th>
+<th className="p-4 text-left">Kegiatan</th>
+<th className="p-4">Status</th>
 </tr>
 </thead>
 
 <tbody>
-{sorted.map((item,i)=>(
-<tr key={item.id} className="border-t text-center">
+{sorted.length===0?(
+<tr>
+<td colSpan={selectMode?7:6}
+className="py-20 text-center text-slate-400 font-medium">
+Tidak ada riwayat kunjungan
+</td>
+</tr>
+):(
+sorted.map((item,i)=>(
+<tr key={item.id} className="border-t text-center hover:bg-slate-50">
+
 {selectMode&&(
 <td>
 <input type="checkbox"
@@ -100,22 +108,27 @@ checked={selected.includes(item.id)}
 onChange={()=>toggleSelect(item.id)}/>
 </td>
 )}
-<td className="p-3">{i+1}</td>
+
+<td className="p-4 font-semibold text-slate-500">{i+1}</td>
 <td>{new Date(item.date).toLocaleDateString("id-ID")}</td>
-<td>{item.name}</td>
-<td>{item.chosing}</td>
-<td>{item.purpose||item.description}</td>
+<td className="text-left font-medium">{item.name}</td>
+<td className="text-left capitalize">{item.chosing}</td>
+<td className="text-left max-w-[240px] truncate">
+{item.purpose||item.description}
+</td>
 <td>
-<span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs">
+<span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-semibold">
 Kunjungan
 </span>
 </td>
+
 </tr>
-))}
-</tbody>
-</table>
-</div>
+))
 )}
+</tbody>
+
+</table>
+</TableBox>
 
 </div>
 );

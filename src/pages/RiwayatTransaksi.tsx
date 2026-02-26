@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from "react";
 import PageHeader from "../components/PageHeader";
+import TableBox from "../components/ui/TableBox";
 import apiClient from "../apiClient";
 
 interface Transaction{
@@ -13,6 +14,7 @@ status:string;
 }
 
 const Riwayat:React.FC=()=>{
+
 const[history,setHistory]=useState<Transaction[]>([]);
 const[selected,setSelected]=useState<string[]>([]);
 const[selectMode,setSelectMode]=useState(false);
@@ -32,25 +34,9 @@ const toggleSelect=(id:string)=>{
 setSelected(p=>p.includes(id)?p.filter(i=>i!==id):[...p,id]);
 };
 
-const toggleSelectAll=()=>{
+const toggleAll=()=>{
 if(selected.length===history.length)setSelected([]);
 else setSelected(history.map(i=>i.id));
-};
-
-const deleteSelected=async()=>{
-for(const id of selected)
-await apiClient.delete(`/transactions/${id}`);
-setSelected([]);
-setSelectMode(false);
-fetchTransactions();
-};
-
-const getStatus=(due:string)=>{
-const today=new Date();
-const d=new Date(due);
-const diff=Math.ceil((today.getTime()-d.getTime())/(1000*60*60*24));
-if(diff<=0)return{status:"Tepat Waktu",late:0};
-return{status:"Terlambat",late:diff};
 };
 
 const sorted=[...history]
@@ -58,38 +44,25 @@ const sorted=[...history]
 .slice(0,limit);
 
 return(
-<div className="p-10">
+<div className="p-8 space-y-8">
 
+<div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
 <PageHeader
 title="Riwayat Peminjaman"
 subtitle="Histori transaksi buku"
 onSortChange={setSort}
 onLimitChange={setLimit}
 right={
-<>
 <button
 onClick={()=>setSelectMode(!selectMode)}
 className="px-4 py-2 bg-slate-200 rounded-xl text-xs font-bold">
 {selectMode?"Cancel":"Select"}
 </button>
-
-{selectMode&&selected.length>0&&(
-<button
-onClick={deleteSelected}
-className="px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-bold">
-Hapus
-</button>
-)}
-</>
 }
 />
-
-{sorted.length===0?(
-<div className="text-center text-slate-400 font-bold py-20">
-Belum ada riwayat
 </div>
-):(
-<div className="overflow-x-auto rounded-2xl shadow">
+
+<TableBox>
 <table className="w-full text-sm bg-white">
 
 <thead className="bg-slate-100 text-xs uppercase">
@@ -97,8 +70,8 @@ Belum ada riwayat
 {selectMode&&(
 <th className="px-6 py-4">
 <input type="checkbox"
-checked={selected.length===sorted.length}
-onChange={toggleSelectAll}/>
+checked={selected.length===sorted.length&&sorted.length>0}
+onChange={toggleAll}/>
 </th>
 )}
 <th className="px-6 py-4">No</th>
@@ -113,13 +86,26 @@ onChange={toggleSelectAll}/>
 </thead>
 
 <tbody>
-{sorted.map((item,i)=>{
-const info=getStatus(item.dueDate);
+{sorted.length===0?(
+<tr>
+<td colSpan={selectMode?9:8}
+className="py-20 text-center text-slate-400">
+Tidak ada riwayat peminjaman
+</td>
+</tr>
+):(
+sorted.map((item,i)=>{
+
+const today=new Date();
+const due=new Date(item.dueDate);
+const diff=Math.ceil((today.getTime()-due.getTime())/(1000*60*60*24));
+const late=diff>0?diff:0;
+
 return(
-<tr key={item.id} className="border-b">
+<tr key={item.id} className="border-t">
 
 {selectMode&&(
-<td className="px-6 py-4">
+<td className="px-6">
 <input type="checkbox"
 checked={selected.includes(item.id)}
 onChange={()=>toggleSelect(item.id)}/>
@@ -127,32 +113,33 @@ onChange={()=>toggleSelect(item.id)}/>
 )}
 
 <td className="px-6 py-4 font-bold">{i+1}</td>
-<td className="px-6 py-4">{item.bookTitle}</td>
-<td className="px-6 py-4">{item.studentName}</td>
-<td className="px-6 py-4">{item.role}</td>
-<td className="px-6 py-4">{formatDate(item.borrowDate)}</td>
-<td className="px-6 py-4">{formatDate(item.dueDate)}</td>
+<td className="px-6">{item.bookTitle}</td>
+<td className="px-6">{item.studentName}</td>
+<td className="px-6">{item.role}</td>
+<td className="px-6">{formatDate(item.borrowDate)}</td>
+<td className="px-6">{formatDate(item.dueDate)}</td>
 
-<td className="px-6 py-4">
+<td className="px-6">
 <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-info.status==="Tepat Waktu"
+late===0
 ?"bg-green-100 text-green-700"
 :"bg-red-100 text-red-700"}`}>
-{info.status}
+{late===0?"Tepat Waktu":"Terlambat"}
 </span>
 </td>
 
-<td className="px-6 py-4 text-slate-500">
-{info.late>0?`Terlambat ${info.late} hari`:"-"}
+<td className="px-6 text-slate-500">
+{late>0?`Terlambat ${late} hari`:"-"}
 </td>
 
 </tr>
 );
-})}
-</tbody>
-</table>
-</div>
+})
 )}
+</tbody>
+
+</table>
+</TableBox>
 
 </div>
 );

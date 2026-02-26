@@ -62,36 +62,40 @@ export default function Peminjaman() {
     .slice(0, limit);
 
   return (
-    <div className="px-8 pt-6 pb-4">
+    <div className="p-8 space-y-8">
 
-      <PageHeader
-        title="Data Peminjaman"
-        subtitle="Daftar transaksi buku yang sedang dipinjam"
-        onSortChange={setSort}
-        onLimitChange={setLimit}
-        defaultOrder="desc"
-        defaultLimit={10}
-        right={
-          <div className="flex gap-3">
+      {/* HEADER BOX */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+        <PageHeader
+          title="Data Peminjaman"
+          subtitle="Daftar transaksi buku yang sedang dipinjam"
+          onSortChange={setSort}
+          onLimitChange={setLimit}
+          defaultOrder="desc"
+          defaultLimit={10}
+          right={
+            <div className="flex gap-3">
 
-            <button
-              onClick={() => setSelectMode(!selectMode)}
-              className="px-4 py-2 bg-slate-200 rounded-xl text-xs font-bold"
-            >
-              {selectMode ? "Cancel" : "Select"}
-            </button>
+              <button
+                onClick={() => setSelectMode(!selectMode)}
+                className="px-4 py-2 bg-slate-200 rounded-xl text-xs font-bold"
+              >
+                {selectMode ? "Cancel" : "Select"}
+              </button>
 
-            <button
-              onClick={() => setModalOpen(true)}
-              className="bg-[#3F5EA8] text-white px-6 py-2 rounded-full text-xs font-semibold"
-            >
-              + INPUT DATA
-            </button>
+              <button
+                onClick={() => setModalOpen(true)}
+                className="bg-[#3F5EA8] text-white px-6 py-2 rounded-full text-xs font-semibold"
+              >
+                + INPUT DATA
+              </button>
 
-          </div>
-        }
-      />
+            </div>
+          }
+        />
+      </div>
 
+      {/* TABLE */}
       <TransactionTable
         transactions={sorted}
         selectMode={selectMode}
@@ -100,12 +104,14 @@ export default function Peminjaman() {
         onExtend={handleExtend}
       />
 
+      {/* MODAL */}
       {modalOpen && (
         <LendingModal
           onClose={() => setModalOpen(false)}
           onSubmit={() => {}}
         />
       )}
+
     </div>
   );
 }

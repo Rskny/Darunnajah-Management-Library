@@ -40,7 +40,6 @@ export default function Dashboard() {
   useEffect(() => {
     loadData();
 
-    // realtime update kalau visits berubah
     window.addEventListener("visitsUpdated", loadData);
     window.addEventListener("focus", loadData);
 
@@ -53,33 +52,69 @@ export default function Dashboard() {
   return (
     <div className="p-8 space-y-8">
 
+      {/* STATS */}
       <StatsOverview stats={stats} />
 
-      <div className="bg-white rounded-3xl p-8 shadow">
-        <h2 className="text-lg font-bold mb-4">
+      {/* CHART BOX */}
+      <div className="bg-white rounded-3xl p-8 shadow border border-slate-200">
+
+        <h2 className="text-lg font-bold mb-6 text-slate-800">
           Statistik Kunjungan Bulanan
         </h2>
 
         {monthlyData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={320}>
             <BarChart data={monthlyData}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-              <XAxis dataKey="month" />
-              <YAxis allowDecimals={false} />
+
+              {/* GRID */}
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="#e2e8f0"
+              />
+
+              {/* X AXIS */}
+              <XAxis
+                dataKey="month"
+                tick={{ fontSize: 12, fill: "#64748b", fontWeight: 600 }}
+                axisLine={false}
+                tickLine={false}
+              />
+
+              {/* Y AXIS */}
+              <YAxis
+                allowDecimals={false}
+                tick={{ fontSize: 12, fill: "#64748b", fontWeight: 600 }}
+                axisLine={{ stroke: "#cbd5e1", strokeWidth: 1.5 }}
+                tickLine={false}
+              />
+
               <Tooltip />
               <Legend />
 
+              {/* BAR */}
               <Bar
                 dataKey="visits"
-                radius={[8, 8, 0, 0]}
+                radius={[10, 10, 0, 0]}
+                fill="url(#blueGradient)"
               />
+
+              {/* GRADIENT */}
+              <defs>
+                <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#60a5fa" />
+                  <stop offset="100%" stopColor="#1e3a8a" />
+                </linearGradient>
+              </defs>
+
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-slate-400 text-sm italic">
+          <div className="h-[320px] flex items-center justify-center text-slate-400 text-sm italic">
             Belum ada data kunjungan bulan ini.
-          </p>
+          </div>
         )}
+
       </div>
     </div>
   );
