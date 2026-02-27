@@ -22,13 +22,7 @@ relative bg-white rounded-2xl p-4 border transition-all flex flex-col justify-be
 ${selected?"ring-2 ring-blue-500 shadow-lg":"border-slate-200 hover:shadow-md"}
 `}>
 
-{/* checkbox */}
-<input
-type="checkbox"
-checked={selected}
-onChange={onSelect}
-className="absolute top-3 right-3 w-4 h-4 accent-blue-600"
-/>
+
 
 {/* status bar */}
 <div className={`absolute top-0 left-0 w-1 h-full rounded-l-2xl ${
@@ -98,12 +92,7 @@ book.available?"bg-emerald-500":"bg-slate-300"
 
 <div className="flex gap-2">
 
-{/* RESTOCK */}
-<button
-onClick={()=>setOpenRestock(true)}
-className="px-3 py-1.5 text-xs rounded-lg font-bold bg-emerald-500 text-white hover:bg-emerald-600">
-Restock
-</button>
+
 
 {/* BORROW */}
 <button

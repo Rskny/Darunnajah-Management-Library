@@ -209,7 +209,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
 
                 <input
                   required
-                  type="number"
+                  type="text"
                   value={formData.year}
                   onChange={(e) => handleChange('year', e.target.value)}
                   onWheel={(e) => (e.target as HTMLInputElement).blur()}

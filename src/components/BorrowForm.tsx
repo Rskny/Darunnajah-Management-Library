@@ -34,7 +34,6 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
     if (!formData.name) return;
 
     try {
-      // Find exact bookId for the title
       const booksRes = await apiClient.get('/books');
       const foundBook = booksRes.data.find((b: any) => b.title === bookTitle);
 
@@ -52,7 +51,7 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
       const due = new Date();
       due.setDate(today.getDate() + days);
 
-      // POST ke Backend API
+      // POST transaksi ke backend
       await apiClient.post("/transactions", {
         bookId: foundBook.id,
         studentName: formData.name,
@@ -66,7 +65,7 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
         dueDate: due.toISOString().split('T')[0]
       });
 
-      /* ===== SAVE TO HISTORY ===== */
+      // Simpan ke history lokal
       addHistory({
         date: new Date().toISOString(),
         name: formData.name,
@@ -77,11 +76,16 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
         description: "-"
       });
 
-      /* ===== TRIGGER REALTIME REFRESH ===== */
+      // AUTO-REFRESH tabel transaksi & stok buku
       window.dispatchEvent(new Event("transactionsUpdated"));
       window.dispatchEvent(new Event("booksUpdated"));
 
+      // Tutup modal
       onClose();
+
+      // 🔄 Refresh halaman
+      window.location.reload();
+
     } catch (err) {
       console.error(err);
       alert("Gagal memproses peminjaman buku!");
@@ -95,7 +99,12 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
         {/* HEADER */}
         <div className="p-6 border-b flex justify-between items-center bg-slate-50/30">
           <h3 className="text-2xl font-bold text-slate-800">Peminjaman Buku</h3>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full">✕</button>
+          <button
+            onClick={() => { onClose(); window.location.reload(); }}
+            className="p-2 text-slate-400 hover:bg-slate-100 rounded-full"
+          >
+            ✕
+          </button>
         </div>
 
         {/* BODY */}
@@ -163,7 +172,6 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
 
             {/* KELAS + JURUSAN */}
             <div className="grid grid-cols-2 gap-4">
-
               <div>
                 <label className="text-xs font-bold uppercase text-slate-500">Kelas</label>
                 <select
@@ -197,7 +205,6 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
                   ))}
                 </select>
               </div>
-
             </div>
 
             {/* GENDER */}
