@@ -33,7 +33,7 @@ export default function Reports() {
     ...item,
     bookTitle: item.bookTitle || "-",
     activity: item.activity || "-",
-    qty: item.qty ?? "-"
+    qty: item.quantity ?? "-"
   }));
 
   const statusColor = (status?: string): [number, number, number] => {
@@ -84,7 +84,7 @@ export default function Reports() {
           d.toLocaleDateString("id-ID"),
           item.name,
           item.role,
-          item.qty,
+          item.quantity,
           item.activity,
           item.status || "-",
           item.description || "-"

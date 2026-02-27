@@ -4,6 +4,7 @@ import BookCard from "../components/books/BookCard";
 import BookFormModal from "../components/books/BookFormModal";
 import BorrowForm from "../components/BorrowForm";
 import { Book } from "../types";
+import { useLocation } from "react-router-dom";
 
 const Books: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
@@ -14,6 +15,10 @@ const Books: React.FC = () => {
 
   const [sort, setSort] = useState<"asc" | "desc">("desc");
   const [limit, setLimit] = useState(10);
+
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const q = (searchParams.get("search") || "").toLowerCase();
 
   /* ================= FETCH ================= */
   const fetchBooks = async () => {
@@ -87,9 +92,17 @@ const Books: React.FC = () => {
   }, []);
 
   /* ================= SORT + LIMIT ================= */
-  const sorted = [...books].sort((a, b) =>
-    sort === "asc" ? a.id - b.id : b.id - a.id
-  );
+  const sorted = [...books]
+    .filter((b) =>
+      !q ||
+      b.title.toLowerCase().includes(q) ||
+      b.author.toLowerCase().includes(q) ||
+      b.category?.toLowerCase().includes(q) ||
+      b.isbn?.toLowerCase().includes(q)
+    )
+    .sort((a, b) =>
+      sort === "asc" ? a.id - b.id : b.id - a.id
+    );
 
   const display = sorted.slice(0, limit);
 

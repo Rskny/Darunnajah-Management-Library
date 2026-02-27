@@ -4,6 +4,7 @@ import PageHeader from "../components/PageHeader";
 import TableBox from "../components/ui/TableBox";
 import apiClient from "../apiClient";
 import { useHistory } from "../context/HistoryContext";
+import { useLocation } from "react-router-dom";
 
 interface Visit {
   id: number;
@@ -30,6 +31,10 @@ const Visits: React.FC = () => {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [sort, setSort] = useState<"asc" | "desc">("desc");
   const [limit, setLimit] = useState(10);
+
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const q = (searchParams.get("search") || "").toLowerCase();
 
   const { addHistory } = useHistory();
 
@@ -79,6 +84,13 @@ const Visits: React.FC = () => {
   };
 
   const sorted = [...visits]
+    .filter((v) =>
+      !q ||
+      v.name.toLowerCase().includes(q) ||
+      v.chosing.toLowerCase().includes(q) ||
+      v.purpose.toLowerCase().includes(q) ||
+      v.kelas.toLowerCase().includes(q)
+    )
     .sort((a, b) => (sort === "asc" ? a.id - b.id : b.id - a.id))
     .slice(0, limit);
 

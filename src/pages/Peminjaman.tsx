@@ -2,12 +2,17 @@ import React, { useState, useEffect } from "react";
 import TransactionTable from "../components/TransactionTable";
 import PageHeader from "../components/PageHeader";
 import apiClient from "../apiClient";
+import { useLocation } from "react-router-dom";
 
 export default function Peminjaman() {
   const [transactions, setTransactions] = useState<any[]>([]);
 
   const [sort, setSort] = useState<"asc" | "desc">("desc");
   const [limit, setLimit] = useState(10);
+
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const q = (searchParams.get("search") || "").toLowerCase();
 
   const fetchTransactions = async () => {
     try {
@@ -49,6 +54,12 @@ export default function Peminjaman() {
   // Filter Dipinjam + Sort + Limit
   const sorted = [...transactions]
     .filter((t) => t.status === "Dipinjam")
+    .filter((t) =>
+      !q ||
+      t.bookTitle?.toLowerCase().includes(q) ||
+      t.studentName?.toLowerCase().includes(q) ||
+      t.role?.toLowerCase().includes(q)
+    )
     .sort((a, b) => (sort === "asc" ? a.id - b.id : b.id - a.id))
     .slice(0, limit);
 

@@ -62,6 +62,7 @@ router.get('/', authenticateToken, async (req, res) => {
                 date: item.borrowDate,
                 name: item.studentName,
                 role: item.role,
+                quantity: item.quantity,
                 bookTitle: item.bookTitle,
                 activity: `Peminjaman Buku ${item.bookTitle} (${item.quantity} buah)`,
                 status: item.status,
@@ -78,6 +79,7 @@ router.get('/', authenticateToken, async (req, res) => {
                 date: item.date,
                 name: item.name,
                 role: item.chosing,
+                quantity: '-',
                 activity: `Tujuan: ${item.purpose}`,
                 status: 'Selesai',
                 description: `Pukul ${item.time || '-'}`
