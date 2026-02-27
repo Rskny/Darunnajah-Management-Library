@@ -6,7 +6,14 @@ import apiClient from "../apiClient";
 export default function Peminjaman() {
   const [modalOpen, setModalOpen] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
+<<<<<<< Updated upstream
 
+=======
+  const [sort, setSort] = useState<"asc" | "desc">("desc");
+  const [limit, setLimit] = useState(10);
+
+  /* ================= FETCH ================= */
+>>>>>>> Stashed changes
   const fetchTransactions = async () => {
     try {
       const res = await apiClient.get("/transactions");
@@ -18,17 +25,23 @@ export default function Peminjaman() {
 
   useEffect(() => {
     fetchTransactions();
+    const interval = setInterval(fetchTransactions, 60 * 1000); // refresh tiap 1 menit
     window.addEventListener("transactionsUpdated", fetchTransactions);
     return () => {
+      clearInterval(interval);
       window.removeEventListener("transactionsUpdated", fetchTransactions);
     };
   }, []);
 
   /* ================= ACTION ================= */
+<<<<<<< Updated upstream
   const updateTransaction = async (
     id: string | number,
     action: "return" | "extend"
   ) => {
+=======
+  const updateTransaction = async (id: string | number, action: "return" | "extend") => {
+>>>>>>> Stashed changes
     try {
       if (action === "return") {
         await apiClient.put(`/transactions/${id}`, { status: "Dikembalikan" });
@@ -42,6 +55,7 @@ export default function Peminjaman() {
     }
   };
 
+<<<<<<< Updated upstream
   const handleDeleteSelected = async (selectedIds: string[]) => {
     try {
       for (const id of selectedIds) {
@@ -54,6 +68,8 @@ export default function Peminjaman() {
     }
   };
 
+=======
+>>>>>>> Stashed changes
   const handleExtend = async (id: string, newDate: string) => {
     try {
       await apiClient.put(`/transactions/${id}`, { dueDate: newDate });
@@ -64,9 +80,10 @@ export default function Peminjaman() {
     }
   };
 
-  /* ================= SUBMIT MANUAL ================= */
-  const handleSubmit = async (borrowerData: any, days: number, manualBookTitle?: string) => {
+  /* ================= SUBMIT PEMINJAMAN ================= */
+  const handleSubmit = async (borrowerData: any) => {
     try {
+<<<<<<< Updated upstream
       // Find bookId from books (we assume the form provides manualBookTitle or something)
       // Since backend requires bookId, we mock it or if borrowerData provides it. Let's send bookId 1 as fallback or look it up if needed.
       const bookDataRes = await apiClient.get('/books');
@@ -78,14 +95,20 @@ export default function Peminjaman() {
         return;
       }
 
+=======
+>>>>>>> Stashed changes
       const today = new Date();
       await apiClient.post("/transactions", {
-        bookId: foundBook.id,
+        bookId: borrowerData.bookId,
         studentName: borrowerData.name,
         status: "Dipinjam",
+<<<<<<< Updated upstream
         borrowDate: today.toISOString().split('T')[0]
+=======
+        borrowDate: today.toISOString(),
+        qty: borrowerData.qty || 1
+>>>>>>> Stashed changes
       });
-
       fetchTransactions();
       window.dispatchEvent(new Event("transactionsUpdated"));
       setModalOpen(false);
@@ -96,6 +119,7 @@ export default function Peminjaman() {
 
   /* ================= UI ================= */
   return (
+<<<<<<< Updated upstream
     <div className="px-8 pt-6 pb-4">
 
       {/* HEADER */}
@@ -110,13 +134,29 @@ export default function Peminjaman() {
         >
           + INPUT DATA
         </button>
+=======
+    <div className="p-8 space-y-8">
+      {/* HEADER */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+        <PageHeader
+          title="Data Peminjaman"
+          subtitle="Daftar transaksi buku yang sedang dipinjam"
+          onSortChange={setSort}
+          onLimitChange={setLimit}
+          defaultOrder="desc"
+          defaultLimit={10}
+        />
+>>>>>>> Stashed changes
       </div>
 
       {/* TABLE */}
       <TransactionTable
+<<<<<<< Updated upstream
         transactions={transactions.filter(t => t.status === "Dipinjam")}
+=======
+        transactions={sorted}
+>>>>>>> Stashed changes
         onAction={updateTransaction}
-        onDeleteSelected={handleDeleteSelected}
         onExtend={handleExtend}
       />
 
