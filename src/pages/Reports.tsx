@@ -17,7 +17,7 @@ export default function Reports() {
   useEffect(() => {
     const fetchReport = async () => {
       try {
-        const response = await apiClient.get('/reports', {
+        const response = await apiClient.get("/reports", {
           params: { type, month, year }
         });
         setReportData(response.data);
@@ -32,7 +32,8 @@ export default function Reports() {
   const normalized = reportData.map(item => ({
     ...item,
     bookTitle: item.bookTitle || "-",
-    activity: item.activity || "-"
+    activity: item.activity || "-",
+    qty: item.qty ?? "-"
   }));
 
   const statusColor = (status?: string): [number, number, number] => {
@@ -51,7 +52,7 @@ export default function Reports() {
   const downloadPDF = () => {
     const doc = new jsPDF();
 
-    /* ===== HEADER MODERN ===== */
+    /* HEADER */
     doc.setFillColor(37, 99, 235);
     doc.rect(0, 0, 220, 4, "F");
 
@@ -65,23 +66,25 @@ export default function Reports() {
     doc.text(`${months[month]} ${year}`, 190, 15, { align: "right" });
     doc.text(
       type === "transaksi" ? "Riwayat Transaksi" : "Riwayat Kunjungan",
-      190, 22,
+      190,
+      22,
       { align: "right" }
     );
 
     doc.setDrawColor(220);
     doc.line(20, 28, 190, 28);
 
-    /* ===== TABLE ===== */
+    /* TABLE */
     autoTable(doc, {
       startY: 35,
-      head: [["Tanggal", "Nama", "Role", "Aktivitas", "Status", "Keterangan"]],
+      head: [["Tanggal", "Nama", "Role", "Qty", "Aktivitas", "Status", "Keterangan"]],
       body: normalized.map(item => {
         const d = new Date(item.date);
         return [
           d.toLocaleDateString("id-ID"),
           item.name,
           item.role,
+          item.qty,
           item.activity,
           item.status || "-",
           item.description || "-"
@@ -97,7 +100,7 @@ export default function Reports() {
         fontStyle: "bold"
       },
       didParseCell: (data) => {
-        if (data.section === "body" && data.column.index === 4) {
+        if (data.section === "body" && data.column.index === 5) {
           const status = data.cell.raw as string;
           const c = statusColor(status);
           data.cell.styles.fillColor = c;
@@ -105,7 +108,7 @@ export default function Reports() {
       }
     });
 
-    /* ===== FOOTER ===== */
+    /* FOOTER */
     const pageHeight = doc.internal.pageSize.height;
 
     doc.setDrawColor(230);
@@ -127,7 +130,7 @@ export default function Reports() {
       { align: "right" }
     );
 
-    /* ===== SAVE ===== */
+    /* SAVE */
     doc.save(`laporan-${type}-${month + 1}-${year}.pdf`);
   };
 
@@ -183,7 +186,7 @@ export default function Reports() {
 
       </div>
 
-      {/* PREVIEW INFO */}
+      {/* INFO */}
       <div className="text-sm text-slate-500">
         Total data: {reportData.length}
       </div>

@@ -69,15 +69,18 @@ className="px-4 py-2 bg-slate-200 rounded-xl text-xs font-bold">
 <tr>
 {selectMode&&(
 <th className="px-6 py-4">
-<input type="checkbox"
+<input
+type="checkbox"
 checked={selected.length===sorted.length&&sorted.length>0}
-onChange={toggleAll}/>
+onChange={toggleAll}
+/>
 </th>
 )}
 <th className="px-6 py-4">No</th>
 <th className="px-6 py-4">Buku</th>
 <th className="px-6 py-4">Nama</th>
 <th className="px-6 py-4">Role</th>
+<th className="px-6 py-4">Jumlah</th> {/* KOLOM BARU */}
 <th className="px-6 py-4">Pinjam</th>
 <th className="px-6 py-4">Kembali</th>
 <th className="px-6 py-4">Status</th>
@@ -88,7 +91,7 @@ onChange={toggleAll}/>
 <tbody>
 {sorted.length===0?(
 <tr>
-<td colSpan={selectMode?9:8}
+<td colSpan={selectMode?10:9}
 className="py-20 text-center text-slate-400">
 Tidak ada riwayat peminjaman
 </td>
@@ -106,9 +109,11 @@ return(
 
 {selectMode&&(
 <td className="px-6">
-<input type="checkbox"
+<input
+type="checkbox"
 checked={selected.includes(item.id)}
-onChange={()=>toggleSelect(item.id)}/>
+onChange={()=>toggleSelect(item.id)}
+/>
 </td>
 )}
 
@@ -116,6 +121,10 @@ onChange={()=>toggleSelect(item.id)}/>
 <td className="px-6">{item.bookTitle}</td>
 <td className="px-6">{item.studentName}</td>
 <td className="px-6">{item.role}</td>
+
+{/* JUMLAH */}
+<td className="px-6 font-semibold">1</td>
+
 <td className="px-6">{formatDate(item.borrowDate)}</td>
 <td className="px-6">{formatDate(item.dueDate)}</td>
 

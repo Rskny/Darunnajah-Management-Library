@@ -15,23 +15,78 @@ const Books: React.FC = () => {
   const [sort, setSort] = useState<"asc" | "desc">("desc");
   const [limit, setLimit] = useState(10);
 
+  /* ================= FETCH ================= */
   const fetchBooks = async () => {
-    const res = await apiClient.get("/books");
-    setBooks(res.data);
+    try {
+      const res = await apiClient.get("/books");
+      setBooks(res.data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   useEffect(() => {
     fetchBooks();
   }, []);
 
-  const handleDeleteSelected = async () => {
-    for (const id of selected) {
-      await apiClient.delete(`/books/${id}`);
+  /* ================= ADD BOOK ================= */
+  const handleAddBook = async (book: Omit<Book, "id" | "available">) => {
+    try {
+      await apiClient.post("/books", book);
+      fetchBooks();
+      setShowForm(false);
+    } catch (err) {
+      console.error(err);
     }
-    fetchBooks();
-    setSelected([]);
   };
 
+  /* ================= BULK ADD ================= */
+  const handleBulkAdd = async (
+    booksData: Omit<Book, "id" | "available">[]
+  ) => {
+    try {
+      for (const b of booksData) {
+        await apiClient.post("/books", b);
+      }
+      fetchBooks();
+      setShowForm(false);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  /* ================= DELETE ================= */
+  const handleDeleteSelected = async () => {
+    try {
+      for (const id of selected) {
+        await apiClient.delete(`/books/${id}`);
+      }
+      fetchBooks();
+      setSelected([]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  /* ================= BORROW ================= */
+  const handleBorrow = (data: any) => {
+    setBooks((prev) =>
+      prev.map((b) =>
+        b.title === data.bookTitle
+          ? { ...b, stock: b.stock - 1, available: b.stock - 1 > 0 }
+          : b
+      )
+    );
+  };
+
+  /* ================= SYNC EVENT ================= */
+  useEffect(() => {
+    const syncBooks = () => fetchBooks();
+    window.addEventListener("booksUpdated", syncBooks);
+    return () => window.removeEventListener("booksUpdated", syncBooks);
+  }, []);
+
+  /* ================= SORT + LIMIT ================= */
   const sorted = [...books].sort((a, b) =>
     sort === "asc" ? a.id - b.id : b.id - a.id
   );
@@ -41,7 +96,7 @@ const Books: React.FC = () => {
   return (
     <div className="p-8 space-y-8">
 
-      {/* ================= HEADER BOX ================= */}
+      {/* ================= HEADER ================= */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex items-center justify-between">
 
         <div>
@@ -94,7 +149,7 @@ const Books: React.FC = () => {
             </button>
           )}
 
-          {/* INPUT */}
+          {/* ADD */}
           <button
             onClick={() => setShowForm(true)}
             className="px-6 py-2 rounded-full bg-[#3b5998] text-white font-semibold text-xs shadow-md"
@@ -105,7 +160,7 @@ const Books: React.FC = () => {
         </div>
       </div>
 
-      {/* ================= CARD CONTAINER OUTLINE ================= */}
+      {/* ================= GRID ================= */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
 
         {display.length === 0 ? (
@@ -118,12 +173,12 @@ const Books: React.FC = () => {
             {display.map((book, i) => (
               <div key={book.id} className="relative">
 
-                {/* NOMOR */}
+                {/* NUMBER BADGE */}
                 <div className="absolute -top-3 -right-3 bg-black text-white text-xs w-6 h-6 flex items-center justify-center rounded-full">
                   {i + 1}
                 </div>
 
-                {/* CHECKBOX SELECT */}
+                {/* CHECKBOX */}
                 {showSelect && (
                   <input
                     type="checkbox"
@@ -150,7 +205,15 @@ const Books: React.FC = () => {
                     )
                   }
                   onLend={() => setSelectedBook(book)}
-                  onRestock={() => {}}
+                  onRestock={() =>
+                    setBooks((prev) =>
+                      prev.map((b) =>
+                        b.id === book.id
+                          ? { ...b, stock: b.stock + 1, available: true }
+                          : b
+                      )
+                    )
+                  }
                 />
 
               </div>
@@ -164,8 +227,8 @@ const Books: React.FC = () => {
       {showForm && (
         <BookFormModal
           onClose={() => setShowForm(false)}
-          onSubmit={() => {}}
-          onBulkSubmit={() => {}}
+          onSubmit={handleAddBook}
+          onBulkSubmit={handleBulkAdd}
         />
       )}
 
@@ -173,9 +236,9 @@ const Books: React.FC = () => {
         <BorrowForm
           bookTitle={selectedBook.title}
           onClose={() => setSelectedBook(null)}
+          onSubmit={handleBorrow}
         />
       )}
-
     </div>
   );
 };

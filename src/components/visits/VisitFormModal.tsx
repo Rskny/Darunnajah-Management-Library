@@ -4,7 +4,7 @@ import { useHistory } from "../../context/HistoryContext";
 
 const MAJORS = ["IPA", "IPS", "MAK", "TSANAWIYAH"];
 const CLASSES = ["1", "2", "3", "4", "5", "6"];
-const ROLES = ["Siswa", "Guru"];
+const ROLES = ["Student", "Teacher"];
 
 interface VisitFormModalProps {
   onClose: () => void;
@@ -87,11 +87,11 @@ const VisitFormModal: React.FC<VisitFormModalProps> = ({
             <div>
               <label className="text-xs font-bold uppercase text-slate-500">Kelas</label>
               <select
-                disabled={formData.chosing === "Guru"}
+                disabled={formData.chosing === "Teacher"}
                 value={formData.kelas}
                 onChange={(e) => setFormData({ ...formData, kelas: e.target.value })}
                 className={`w-full px-5 py-3 rounded-2xl ${
-                  formData.chosing === "Guru"
+                  formData.chosing === "Teacher"
                     ? "bg-slate-200 cursor-not-allowed opacity-60"
                     : "bg-slate-50"
                 }`}
@@ -107,11 +107,11 @@ const VisitFormModal: React.FC<VisitFormModalProps> = ({
             <div>
               <label className="text-xs font-bold uppercase text-slate-500">Jurusan</label>
               <select
-                disabled={formData.chosing === "Guru"}
+                disabled={formData.chosing === "Teacher"}
                 value={formData.jurusan}
                 onChange={(e) => setFormData({ ...formData, jurusan: e.target.value })}
                 className={`w-full px-5 py-3 rounded-2xl ${
-                  formData.chosing === "Guru"
+                  formData.chosing === "Teacher"
                     ? "bg-slate-200 cursor-not-allowed opacity-60"
                     : "bg-slate-50"
                 }`}
