@@ -13,7 +13,7 @@ export default function TransactionTable({ transactions = [], onAction, onExtend
 
   const submitExtend = (id: string) => {
     if (!newDate) return;
-    onExtend?.(id, new Date(newDate).toISOString());
+    onExtend?.(id, newDate);
     setExtendId(null);
     setNewDate("");
   };
