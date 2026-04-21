@@ -57,17 +57,20 @@ const PageHeader: React.FC<Props> = ({
         <div className="flex items-center gap-3">
 
           {onLimitChange && (
-            <select
-              value={limit}
-              onChange={changeLimit}
-              className="px-3 py-2 text-xs rounded-xl border border-slate-200 font-semibold"
-            >
-              <option value={10}>Top 10</option>
-              <option value={25}>Top 25</option>
-              <option value={50}>Top 50</option>
-              <option value={100}>Top 100</option>
-            </select>
-          )}
+  <select
+    value={limit}
+    onChange={changeLimit}
+    className="px-3 py-2 text-xs rounded-xl border border-slate-200 font-semibold"
+  >
+    <option value={10}>Top 10</option>
+    <option value={25}>Top 25</option>
+    <option value={50}>Top 50</option>
+    <option value={100}>Top 100</option>
+    {/* TAMBAHKAN BARIS DI BAWAH INI */}
+    <option value={1000}>Top 1000</option> 
+    <option value={5000}>Semua Data</option>
+  </select>
+)}
 
           {onSortChange && (
             <button

@@ -50,7 +50,7 @@ export interface HistoryItem {
 export interface Member {
   id: string;
   name: string;
-  nis: string;
+  status: string;
   class: string;
   joinDate: string;
   status: "active" | "inactive";

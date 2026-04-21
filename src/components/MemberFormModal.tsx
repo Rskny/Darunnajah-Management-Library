@@ -6,18 +6,18 @@ interface Props {
   onImport: (data: Member[]) => void;
 }
 
-const REQUIRED_HEADERS = ["nama", "nis", "kelas", "jurusan", "gender"];
+const REQUIRED_HEADERS = ["nama", "status", "kelas", "jurusan", "gender"];
 const REQUIRED_FIELDS = ["nama", "kelas", "jurusan", "gender"];
 
-const KELAS_LIST = ["1", "2", "3", "4", "5", "6"];
-const JURUSAN_LIST = ["Tsanawiyah", "IPS", "IPA", "MAK"];
+const KELAS_LIST = ["1", "2", "3", "4", "5", "6", "Intensive" , "-"];
+const JURUSAN_LIST = ["Tsanawiyah", "IPS", "IPA", "MAK", "-"];
 
 export default function MemberFormModal({ onClose, onImport }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [manualData, setManualData] = useState<Member>({
     nama: "",
-    nis: "",
+    status: "",
     kelas: "",
     jurusan: "",
     gender: "",
@@ -45,7 +45,7 @@ export default function MemberFormModal({ onClose, onImport }: Props) {
           .map((h) => h.trim().toLowerCase());
 
         if (REQUIRED_HEADERS.some((h) => !headers.includes(h))) {
-          alert("Header wajib: nama, nis, kelas, jurusan, gender");
+          alert("Header wajib: nama, status, kelas, jurusan, gender");
           return;
         }
 
@@ -141,7 +141,7 @@ export default function MemberFormModal({ onClose, onImport }: Props) {
             </button>
 
             <p className="text-[10px] text-blue-400 mt-3">
-              Header: nama, nis (opsional), kelas, jurusan, gender
+              Header: nama, status , kelas, jurusan, gender
             </p>
 
             <input
@@ -172,11 +172,11 @@ export default function MemberFormModal({ onClose, onImport }: Props) {
             />
 
             <input
-              placeholder="NIS (Opsional)"
+              placeholder="status (teacher/student)"
               className="w-full px-5 py-3 bg-slate-100 rounded-xl font-bold text-sm"
-              value={manualData.nis}
+              value={manualData.status}
               onChange={(e) =>
-                setManualData({ ...manualData, nis: e.target.value })
+                setManualData({ ...manualData, status: e.target.value })
               }
             />
 

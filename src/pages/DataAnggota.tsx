@@ -7,7 +7,7 @@ import { useLocation } from "react-router-dom";
 export interface Member {
     id?: number;
     nama: string;
-    nis: string;
+    status: string;
     kelas: string;
     jurusan: string;
     gender: string;
@@ -60,7 +60,7 @@ export default function DataAnggota() {
         .filter((m: any) =>
             !q ||
             m.nama.toLowerCase().includes(q) ||
-            m.nis.toLowerCase().includes(q) ||
+            m.status.toLowerCase().includes(q) ||
             m.kelas.toLowerCase().includes(q) ||
             m.jurusan.toLowerCase().includes(q) ||
             m.gender.toLowerCase().includes(q)
@@ -105,11 +105,11 @@ export default function DataAnggota() {
             </div>
 
             {/* ================= TABLE BOX ================= */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-auto max-h-[600px]">
 
                 <table className="w-full text-sm">
 
-                    <thead className="bg-slate-100 text-xs uppercase text-slate-600">
+                    <thead className="bg-slate-100 text-xs uppercase text-slate-600 sticky top-0 z-10">
                         <tr className="text-center">
 
                             {showSelect && (
@@ -124,7 +124,7 @@ export default function DataAnggota() {
 
                             <th className="p-4 w-14">No</th>
                             <th className="p-4 text-left">Nama</th>
-                            <th className="p-4">NIS</th>
+                            <th className="p-4">status</th>
                             <th className="p-4">Kelas</th>
                             <th className="p-4">Jurusan</th>
                             <th className="p-4">Gender</th>
@@ -163,7 +163,7 @@ export default function DataAnggota() {
                                         {m.nama}
                                     </td>
 
-                                    <td>{m.nis}</td>
+                                    <td>{m.status}</td>
                                     <td>{m.kelas}</td>
                                     <td>{m.jurusan}</td>
                                     <td>{m.gender}</td>

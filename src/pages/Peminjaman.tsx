@@ -43,13 +43,16 @@ export default function Peminjaman() {
   };
 
   const handleExtend = async (id: string, newDate: string) => {
-    try {
-      await apiClient.put(`/transactions/${id}`, { dueDate: newDate });
-      fetchTransactions();
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  try {
+    await apiClient.put(`/transactions/${id}`, {
+      dueDate: newDate
+    });
+
+    fetchTransactions();
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   // Filter Dipinjam + Sort + Limit
   const sorted = [...transactions]
