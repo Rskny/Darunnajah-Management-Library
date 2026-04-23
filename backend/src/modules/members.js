@@ -41,7 +41,7 @@ router.get('/', authenticateToken, async (req, res) => {
  *             type: object
  *             properties:
  *               nama: { type: string }
- *               nis: { type: string }
+ *               status: { type: string }
  *               kelas: { type: string }
  *               jurusan: { type: string }
  *               gender: { type: string }
@@ -52,8 +52,8 @@ router.get('/', authenticateToken, async (req, res) => {
 // Tambah anggota baru
 router.post('/', authenticateToken, async (req, res) => {
     try {
-        const { nama, nis, kelas, jurusan, gender } = req.body;
-        const [id] = await db('members').insert({ nama, nis, kelas, jurusan, gender });
+        const { nama, status, kelas, jurusan, gender } = req.body;
+        const [id] = await db('members').insert({ nama, status, kelas, jurusan, gender });
         res.status(201).json({ message: 'Anggota berhasil ditambahkan', id });
     } catch (error) {
         res.status(500).json({ error: 'Gagal menambah anggota', detail: error.message });
