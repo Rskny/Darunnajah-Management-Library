@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import apiClient from "../apiClient";
-import BookCard from "../components/books/BookCard";
 import BookFormModal from "../components/books/BookFormModal";
 import BorrowForm from "../components/BorrowForm";
 import { Book } from "../types";
@@ -14,13 +13,12 @@ const Books: React.FC = () => {
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
   const [sort, setSort] = useState<"asc" | "desc">("desc");
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState<number | string>(10);
 
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const q = (searchParams.get("search") || "").toLowerCase();
 
-  /* ================= FETCH ================= */
   const fetchBooks = async () => {
     try {
       const res = await apiClient.get("/books");
@@ -34,8 +32,7 @@ const Books: React.FC = () => {
     fetchBooks();
   }, []);
 
-  /* ================= ADD BOOK ================= */
-  const handleAddBook = async (book: Omit<Book, "id" | "available">) => {
+  const handleAddBook = async (book: any) => {
     try {
       await apiClient.post("/books", book);
       fetchBooks();
@@ -45,35 +42,20 @@ const Books: React.FC = () => {
     }
   };
 
-  /* ================= BULK ADD ================= */
-  const handleBulkAdd = async (
-    booksData: Omit<Book, "id" | "available">[]
-  ) => {
-    try {
-      for (const b of booksData) {
-        await apiClient.post("/books", b);
-      }
-      fetchBooks();
-      setShowForm(false);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  /* ================= DELETE ================= */
   const handleDeleteSelected = async () => {
+    if (!window.confirm(`Hapus ${selected.length} buku terpilih?`)) return;
     try {
       for (const id of selected) {
         await apiClient.delete(`/books/${id}`);
       }
       fetchBooks();
       setSelected([]);
+      setShowSelect(false);
     } catch (err) {
       console.error(err);
     }
   };
 
-  /* ================= BORROW ================= */
   const handleBorrow = (data: any) => {
     setBooks((prev) =>
       prev.map((b) =>
@@ -84,172 +66,175 @@ const Books: React.FC = () => {
     );
   };
 
-  /* ================= SYNC EVENT ================= */
-  useEffect(() => {
-    const syncBooks = () => fetchBooks();
-    window.addEventListener("booksUpdated", syncBooks);
-    return () => window.removeEventListener("booksUpdated", syncBooks);
-  }, []);
-
-  /* ================= SORT + LIMIT ================= */
   const sorted = [...books]
     .filter((b) =>
       !q ||
       b.title.toLowerCase().includes(q) ||
       b.author.toLowerCase().includes(q) ||
-      b.category?.toLowerCase().includes(q) ||
-      b.isbn?.toLowerCase().includes(q)
+      b.category?.toLowerCase().includes(q)
     )
-    .sort((a, b) =>
-      sort === "asc" ? a.id - b.id : b.id - a.id
-    );
+    .sort((a, b) => (sort === "asc" ? a.id - b.id : b.id - a.id));
 
-  const display = sorted.slice(0, limit);
+  const display = limit === "all" ? sorted : sorted.slice(0, Number(limit));
 
   return (
-    <div className="p-8 space-y-8">
-
-      {/* ================= HEADER ================= */}
+    <div className="p-8 space-y-8 text-slate-800">
+      {/* HEADER SECTION */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex items-center justify-between">
-
         <div>
-          <h1 className="text-2xl font-black text-slate-800">
-            Katalog Buku
-          </h1>
-          <p className="text-sm text-slate-400 font-medium">
-            Manajemen koleksi perpustakaan
-          </p>
+          <h1 className="text-2xl font-black">Katalog Buku</h1>
+          <p className="text-sm text-slate-400 font-medium">Manajemen koleksi perpustakaan</p>
         </div>
 
         <div className="flex gap-3 items-center">
-
-          {/* LIMIT */}
           <select
-            onChange={(e) => setLimit(Number(e.target.value))}
-            className="px-4 py-2 border rounded-xl text-xs font-bold"
+            value={limit}
+            onChange={(e) => setLimit(e.target.value === "all" ? "all" : Number(e.target.value))}
+            className="px-4 py-2 border rounded-xl text-xs font-bold bg-slate-50 outline-none cursor-pointer"
           >
             <option value={10}>10</option>
             <option value={25}>25</option>
             <option value={50}>50</option>
+            <option value="all">Semua</option>
           </select>
 
-          {/* SORT */}
-          <button
-            onClick={() => setSort(sort === "asc" ? "desc" : "asc")}
-            className="px-4 py-2 bg-slate-200 rounded-xl text-xs font-bold"
-          >
+          <button onClick={() => setSort(sort === "asc" ? "desc" : "asc")} className="px-4 py-2 bg-slate-100 rounded-xl text-xs font-bold text-slate-600">
             {sort === "asc" ? "Ascending" : "Descending"}
           </button>
 
-          {/* SELECT */}
-          <button
-            onClick={() => {
-              setShowSelect(!showSelect);
-              setSelected([]);
-            }}
-            className="px-4 py-2 bg-slate-200 rounded-xl text-xs font-bold"
+          <button 
+            onClick={() => { setShowSelect(!showSelect); setSelected([]); }} 
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              showSelect ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600"
+            }`}
           >
             {showSelect ? "Cancel" : "Select"}
           </button>
 
-          {/* DELETE */}
           {selected.length > 0 && (
-            <button
-              onClick={handleDeleteSelected}
-              className="px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-bold"
+            <button 
+              onClick={handleDeleteSelected} 
+              className="px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-bold shadow-md animate-in zoom-in duration-200"
             >
               Hapus ({selected.length})
             </button>
           )}
 
-          {/* ADD */}
-          <button
-            onClick={() => setShowForm(true)}
-            className="px-6 py-2 rounded-full bg-[#3b5998] text-white font-semibold text-xs shadow-md"
-          >
+          <button onClick={() => setShowForm(true)} className="px-6 py-2 rounded-full bg-[#3b5998] text-white font-semibold text-xs shadow-md">
             + Input Buku
           </button>
-
         </div>
       </div>
 
-      {/* ================= GRID ================= */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
-
-        {display.length === 0 ? (
-          <div className="text-center text-slate-400 font-bold py-20">
-            Belum ada buku
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-
-            {display.map((book, i) => (
-              <div key={book.id} className="relative">
-
-                {/* NUMBER BADGE */}
-                <div className="absolute -top-3 -right-3 bg-black text-white text-xs w-6 h-6 flex items-center justify-center rounded-full">
-                  {i + 1}
-                </div>
-
-                {/* CHECKBOX */}
+      {/* TABLE SECTION */}
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="border-b border-slate-100 font-bold text-[11px] text-slate-400 uppercase bg-slate-50/30">
                 {showSelect && (
-                  <input
-                    type="checkbox"
-                    className="absolute top-2 left-2 z-10 w-5 h-5"
-                    checked={selected.includes(book.id)}
-                    onChange={() =>
-                      setSelected((prev) =>
-                        prev.includes(book.id)
-                          ? prev.filter((x) => x !== book.id)
-                          : [...prev, book.id]
-                      )
-                    }
-                  />
+                  <th className="p-4 w-12 text-center animate-in slide-in-from-left duration-200">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded border-slate-300 accent-[#0d9488]"
+                      checked={selected.length === display.length && display.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) setSelected(display.map((b) => b.id.toString()));
+                        else setSelected([]);
+                      }}
+                    />
+                  </th>
                 )}
+                <th className="p-4 w-12 text-center">No</th>
+                <th className="p-4">Nama Buku</th>
+                <th className="p-4">Penerbit</th>
+                <th className="p-4 text-center">Kategori</th>
+                <th className="p-4 text-center">Asal Buku</th>
+                <th className="p-4 text-center">Tahun</th>
+                <th className="p-4 text-center">Stok</th>
+                {/* PERBAIKAN: Gunakan text-center dan lebar tetap agar selaras */}
+                <th className="p-4 text-center w-32">Aksi</th>
+              </tr>
+            </thead>
 
-                <BookCard
-                  book={book}
-                  selected={selected.includes(book.id)}
-                  onSelect={() =>
-                    setSelected((prev) =>
-                      prev.includes(book.id)
-                        ? prev.filter((x) => x !== book.id)
-                        : [...prev, book.id]
-                    )
-                  }
-                  onLend={() => setSelectedBook(book)}
-                  onRestock={() =>
-                    setBooks((prev) =>
-                      prev.map((b) =>
-                        b.id === book.id
-                          ? { ...b, stock: b.stock + 1, available: true }
-                          : b
-                      )
-                    )
-                  }
-                />
-
-              </div>
-            ))}
-
-          </div>
-        )}
+            <tbody className="divide-y divide-slate-50">
+              {display.map((book, i) => (
+                <tr 
+                  key={book.id} 
+                  className={`transition-colors ${selected.includes(book.id.toString()) ? "bg-slate-50" : "hover:bg-slate-50/50"}`}
+                >
+                  {showSelect && (
+                    <td className="p-4 text-center animate-in slide-in-from-left duration-200">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 rounded border-slate-300 accent-[#0d9488] cursor-pointer"
+                        checked={selected.includes(book.id.toString())}
+                        onChange={() => setSelected(prev => 
+                          prev.includes(book.id.toString()) 
+                          ? prev.filter(id => id !== book.id.toString()) 
+                          : [...prev, book.id.toString()]
+                        )}
+                      />
+                    </td>
+                  )}
+                  <td className="p-4 text-xs font-bold text-slate-400 text-center">{i + 1}</td>
+                  <td className="p-4">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-slate-700 leading-tight">{book.title}</span>
+                      <span className="text-[10px] text-slate-400 font-medium italic">{book.author}</span>
+                    </div>
+                  </td>
+                  <td className="p-4 text-xs text-slate-500 font-medium">{book.publisher || "-"}</td>
+                  <td className="p-4 text-center">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase bg-slate-100 px-2 py-0.5 rounded">
+                      {book.category}
+                    </span>
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className="text-[10px] font-semibold text-slate-500 uppercase">
+                      {book.source || "Pembelian"}
+                    </span>
+                  </td>
+                  <td className="p-4 text-xs font-medium text-slate-500 text-center">{book.year}</td>
+                  <td className="p-4 text-center">
+                    <span className={`text-xs font-black ${book.stock > 0 ? "text-emerald-500" : "text-red-400"}`}>
+                      {book.stock}
+                    </span>
+                  </td>
+                  {/* PERBAIKAN: text-center agar pas di bawah tulisan AKSI */}
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => setSelectedBook(book)}
+                      disabled={!book.available}
+                      className={`w-24 py-1.5 text-[10px] rounded-lg font-bold transition-all ${
+                        book.available 
+                        ? "bg-[#3b5998] text-white hover:bg-[#2d4373]" 
+                        : "bg-slate-100 text-slate-300 cursor-not-allowed"
+                      }`}
+                    >
+                      {book.available ? "Pinjam" : "Habis"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* ================= MODALS ================= */}
       {showForm && (
-        <BookFormModal
-          onClose={() => setShowForm(false)}
-          onSubmit={handleAddBook}
-          onBulkSubmit={handleBulkAdd}
+        <BookFormModal 
+          onClose={() => setShowForm(false)} 
+          onSubmit={handleAddBook} 
+          onBulkSubmit={() => {}} 
         />
       )}
 
       {selectedBook && (
-        <BorrowForm
-          bookTitle={selectedBook.title}
-          onClose={() => setSelectedBook(null)}
-          onSubmit={handleBorrow}
+        <BorrowForm 
+          bookTitle={selectedBook.title} 
+          onClose={() => setSelectedBook(null)} 
+          onSubmit={handleBorrow} 
         />
       )}
     </div>
