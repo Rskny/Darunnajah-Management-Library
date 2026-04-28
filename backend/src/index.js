@@ -4,6 +4,7 @@ const cors = require('cors');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
+// Import Semua Route Modul
 const authRoutes = require('./modules/auth');
 const booksRoutes = require('./modules/books');
 const membersRoutes = require('./modules/members');
@@ -12,12 +13,17 @@ const visitsRoutes = require('./modules/visits');
 const systemRoutes = require('./modules/system');
 const dashboardRoutes = require('./modules/dashboard');
 const reportsRoutes = require('./modules/reports');
+const settingsRoutes = require('./modules/settings'); // Route yang baru dibuat
 
 const app = express();
+
+// Middleware Utama
 app.use(cors());
 app.use(express.json());
 
-// Konfigurasi API Dokumentasi (Swagger)
+// ==========================================
+// KONFIGURASI SWAGGER (API DOCUMENTATION)
+// ==========================================
 const swaggerOptions = {
     definition: {
         openapi: '3.0.0',
@@ -39,7 +45,8 @@ const swaggerOptions = {
             bearerAuth: []
         }],
     },
-    apis: ['./src/modules/*.js'], // Ambil semua komentar anotasi Swagger dari modules
+    // Pastikan path ini benar mengarah ke folder modules kamu
+    apis: ['./src/modules/*.js'], 
 };
 
 const specs = swaggerJsdoc(swaggerOptions);
@@ -56,10 +63,15 @@ app.use('/api/visits', visitsRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/settings', settingsRoutes); // Pendaftaran Route Settings
 
-// Jalankan Server
+// ==========================================
+// JALANKAN SERVER
+// ==========================================
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`Server Backend berjalan di http://localhost:${PORT}`);
-    console.log(`Dokumentasi Swagger tersedia di http://localhost:${PORT}/api-docs`);
+    console.log(`================================================`);
+    console.log(`🚀 Server Backend Berjalan di http://localhost:${PORT}`);
+    console.log(`📚 Swagger Docs: http://localhost:${PORT}/api-docs`);
+    console.log(`================================================`);
 });

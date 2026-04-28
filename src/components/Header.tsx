@@ -105,65 +105,73 @@ const Header: React.FC = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={getPlaceholder()}
-              className="pl-11 pr-4 py-2.5 rounded-2xl bg-slate-100 focus:bg-white border border-transparent focus:border-slate-300 outline-none w-72 transition"
+              className="pl-11 pr-4 py-2.5 rounded-2xl bg-slate-100 focus:bg-white border border-transparent focus:border-slate-300 outline-none w-72 transition text-sm"
             />
           </div>
         )}
 
-        {/* PROFILE */}
+        {/* PROFILE SECTION */}
         <div ref={menuRef} className="relative">
-
           <button
             onClick={() => setOpenMenu(!openMenu)}
-            className="flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-slate-100 transition"
+            className="flex items-center gap-3 px-2 py-1.5 rounded-2xl hover:bg-slate-100 transition"
           >
             {safeUser.avatar ? (
               <img
                 src={safeUser.avatar}
-                className="w-10 h-10 rounded-xl object-cover border"
+                alt="profile"
+                className="w-10 h-10 rounded-xl object-cover border-2 border-white shadow-sm"
               />
             ) : (
-              <div className="w-10 h-10 rounded-xl bg-slate-700 text-white flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-xl bg-slate-800 text-white flex items-center justify-center font-bold shadow-md">
                 {initial}
               </div>
             )}
 
-            <span className={`text-slate-400 text-xs transition ${openMenu ? "rotate-180" : ""}`}>
+            <span className={`text-[10px] text-slate-400 transition-transform duration-300 ${openMenu ? "rotate-180" : ""}`}>
               ▼
             </span>
           </button>
 
-          {/* DROPDOWN */}
+          {/* DROPDOWN MENU */}
           {openMenu && (
-            <div className="absolute right-0 mt-3 w-60 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-[9999]">
+            <div className="absolute right-0 mt-3 w-64 bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden z-[9999] animate-in fade-in zoom-in duration-200">
 
-              <div className="px-5 py-4">
-                <p className="font-semibold text-slate-800 text-sm">
+              <div className="px-6 py-5 bg-slate-50/50">
+                <p className="font-bold text-slate-900 text-sm truncate">
                   {safeUser.name}
                 </p>
-                <p className="text-xs text-slate-400">
+                <p className="text-[11px] text-slate-500 truncate mt-0.5 font-medium">
                   {safeUser.email}
                 </p>
               </div>
 
               <div className="border-t border-slate-100"/>
 
-              <button
-                onClick={()=>{
-                  setOpenMenu(false);
-                  setOpenSettings(true);
-                }}
-                className="w-full flex items-center gap-3 px-5 py-3 text-sm hover:bg-slate-50 transition"
-              >
-                ⚙ Pengaturan
-              </button>
+              <div className="p-2">
+                <button
+                  onClick={()=>{
+                    setOpenMenu(false);
+                    setOpenSettings(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-2xl transition"
+                >
+                  <span className="text-slate-400">
+                    <Icons.Settings />
+                  </span>
+                  Settings
+                </button>
 
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-5 py-3 text-sm text-red-500 hover:bg-red-50 transition"
-              >
-                ⏻ Logout
-              </button>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-rose-500 hover:bg-rose-50 rounded-2xl transition"
+                >
+                  <span className="text-rose-400">
+                    <Icons.Logout />
+                  </span>
+                  Logout
+                </button>
+              </div>
 
             </div>
           )}
