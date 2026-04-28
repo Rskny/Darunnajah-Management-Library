@@ -12,10 +12,10 @@ interface Transaction {
     borrowDate: string;
     dueDate: string;
     status: string;
+    quantity: number;
 }
 
 const Riwayat: React.FC = () => {
-
     const [history, setHistory] = useState<Transaction[]>([]);
     const [selected, setSelected] = useState<string[]>([]);
     const [selectMode, setSelectMode] = useState(false);
@@ -27,8 +27,12 @@ const Riwayat: React.FC = () => {
     const q = (searchParams.get("search") || "").toLowerCase();
 
     const fetchTransactions = async () => {
-        const res = await apiClient.get("/transactions");
-        setHistory(res.data.filter((t: any) => t.status === "Dikembalikan"));
+        try {
+            const res = await apiClient.get("/transactions");
+            setHistory(res.data.filter((t: any) => t.status === "Dikembalikan"));
+        } catch (error) {
+            console.error("Fetch error:", error);
+        }
     };
 
     useEffect(() => { fetchTransactions() }, []);
@@ -39,9 +43,9 @@ const Riwayat: React.FC = () => {
         setSelected(p => p.includes(id) ? p.filter(i => i !== id) : [...p, id]);
     };
 
-    const toggleAll = () => {
-        if (selected.length === history.length) setSelected([]);
-        else setSelected(history.map(i => i.id));
+    const toggleAll = (currentData: Transaction[]) => {
+        if (selected.length === currentData.length) setSelected([]);
+        else setSelected(currentData.map(i => i.id));
     };
 
     const sorted = [...history]
@@ -55,9 +59,14 @@ const Riwayat: React.FC = () => {
         .slice(0, limit);
 
     return (
-        <div className="p-8 space-y-8">
+        /* KUNCI UTAMA: 
+           1. w-full dan max-w-full agar tidak melebar melebihi sidebar.
+           2. overflow-hidden untuk mematikan scroll browser utama.
+        */
+        <div className="p-8 h-screen w-full max-w-full flex flex-col overflow-hidden bg-slate-50">
 
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+            {/* HEADER SECTION */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex-shrink-0 mb-6">
                 <PageHeader
                     title="Riwayat Peminjaman"
                     subtitle="Histori transaksi buku"
@@ -66,100 +75,98 @@ const Riwayat: React.FC = () => {
                     right={
                         <button
                             onClick={() => setSelectMode(!selectMode)}
-                            className="px-4 py-2 bg-slate-200 rounded-xl text-xs font-bold">
-                            {selectMode ? "Cancel" : "Select"}
+                            className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${
+                                selectMode ? "bg-red-500 text-white" : "bg-slate-200 text-slate-700"
+                            }`}>
+                            {selectMode ? "Batal" : "Pilih Data"}
                         </button>
                     }
                 />
             </div>
 
-            <TableBox>
-                <table className="w-full text-sm bg-white">
+            {/* AREA TABEL: flex-1 min-h-0 agar dia mengisi sisa ruang vertikal tanpa 'meledak' */}
+            <div className="flex-1 min-h-0 w-full relative">
+                <TableBox>
+                    {/* KUNCI GULIR: 
+                       - overflow-x-auto: scroll samping hanya di sini.
+                       - overflow-y-auto: scroll bawah hanya di sini.
+                       - absolute inset-0: memaksa div ini menempati area TableBox secara penuh.
+                    */}
+                    <div className="absolute inset-0 overflow-auto border border-slate-200 rounded-3xl bg-white shadow-sm">
+                        <table className="w-full text-sm text-left border-collapse" style={{ minWidth: "1000px" }}>
+                            <thead className="sticky top-0 z-30 bg-slate-100 text-slate-600 text-xs uppercase">
+                                <tr>
+                                    {selectMode && <th className="px-6 py-5 bg-slate-100 border-b w-16">Select</th>}
+                                    <th className="px-6 py-5 bg-slate-100 border-b w-12">No</th>
+                                    <th className="px-6 py-5 bg-slate-100 border-b whitespace-nowrap">Judul Buku</th>
+                                    <th className="px-6 py-5 bg-slate-100 border-b whitespace-nowrap">Nama Peminjam</th>
+                                    <th className="px-6 py-5 bg-slate-100 border-b">Role</th>
+                                    <th className="px-6 py-5 bg-slate-100 border-b text-center">Qty</th>
+                                    <th className="px-6 py-5 bg-slate-100 border-b">Pinjam</th>
+                                    <th className="px-6 py-5 bg-slate-100 border-b">Kembali</th>
+                                    <th className="px-6 py-5 bg-slate-100 border-b">Status</th>
+                                    <th className="px-6 py-5 bg-slate-100 border-b">Deskripsi</th>
+                                </tr>
+                            </thead>
 
-                    <thead className="bg-slate-100 text-xs uppercase">
-                        <tr>
-                            {selectMode && (
-                                <th className="px-6 py-4">
-                                    <input
-                                        type="checkbox"
-                                        checked={selected.length === sorted.length && sorted.length > 0}
-                                        onChange={toggleAll}
-                                    />
-                                </th>
-                            )}
-                            <th className="px-6 py-4">No</th>
-                            <th className="px-6 py-4">Buku</th>
-                            <th className="px-6 py-4">Nama</th>
-                            <th className="px-6 py-4">Role</th>
-                            <th className="px-6 py-4">Jumlah</th> {/* KOLOM BARU */}
-                            <th className="px-6 py-4">Pinjam</th>
-                            <th className="px-6 py-4">Kembali</th>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4">Deskripsi</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {sorted.length === 0 ? (
-                            <tr>
-                                <td colSpan={selectMode ? 10 : 9}
-                                    className="py-20 text-center text-slate-400">
-                                    Tidak ada riwayat peminjaman
-                                </td>
-                            </tr>
-                        ) : (
-                            sorted.map((item, i) => {
-
-                                const today = new Date();
-                                const due = new Date(item.dueDate);
-                                const diff = Math.ceil((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
-                                const late = diff > 0 ? diff : 0;
-
-                                return (
-                                    <tr key={item.id} className="border-t">
-
-                                        {selectMode && (
-                                            <td className="px-6">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selected.includes(item.id)}
-                                                    onChange={() => toggleSelect(item.id)}
-                                                />
-                                            </td>
-                                        )}
-
-                                        <td className="px-6 py-4 font-bold">{i + 1}</td>
-                                        <td className="px-6">{item.bookTitle}</td>
-                                        <td className="px-6">{item.studentName}</td>
-                                        <td className="px-6">{item.role}</td>
-
-                                        {/* JUMLAH */}
-                                        <td className="px-6 font-semibold">{item.quantity}</td>
-
-                                        <td className="px-6">{formatDate(item.borrowDate)}</td>
-                                        <td className="px-6">{formatDate(item.dueDate)}</td>
-
-                                        <td className="px-6">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${late === 0
-                                                ? "bg-green-100 text-green-700"
-                                                : "bg-red-100 text-red-700"}`}>
-                                                {late === 0 ? "Tepat Waktu" : "Terlambat"}
-                                            </span>
-                                        </td>
-
-                                        <td className="px-6 text-slate-500">
-                                            {late > 0 ? `Terlambat ${late} hari` : "-"}
-                                        </td>
-
+                            <tbody className="divide-y divide-slate-100">
+                                {sorted.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={10} className="py-20 text-center text-slate-400">Data Kosong</td>
                                     </tr>
-                                );
-                            })
-                        )}
-                    </tbody>
+                                ) : (
+                                    sorted.map((item, i) => {
+                                        const today = new Date();
+                                        const due = new Date(item.dueDate);
+                                        const diff = Math.ceil((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+                                        const late = diff > 0 ? diff : 0;
 
-                </table>
-            </TableBox>
+                                        return (
+                                            <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                                                {selectMode && (
+                                                    <td className="px-6 py-4">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            checked={selected.includes(item.id)} 
+                                                            onChange={() => toggleSelect(item.id)} 
+                                                        />
+                                                    </td>
+                                                )}
+                                                <td className="px-6 py-4 text-slate-400 font-bold">{i + 1}</td>
+                                                <td className="px-6 py-4 font-semibold text-slate-700 whitespace-nowrap">{item.bookTitle}</td>
+                                                <td className="px-6 py-4 text-slate-600 whitespace-nowrap">{item.studentName}</td>
+                                                <td className="px-6 py-4 text-slate-500">{item.role}</td>
+                                                <td className="px-6 py-4 text-center font-bold">{item.quantity}</td>
+                                                <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{formatDate(item.borrowDate)}</td>
+                                                <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{formatDate(item.dueDate)}</td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${
+                                                        late === 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                                                    }`}>
+                                                        {late === 0 ? "Tepat Waktu" : "Terlambat"}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-xs whitespace-nowrap">
+                                                    {late > 0 ? <span className="text-red-500 font-medium italic">Terlambat {late} hari</span> : "-"}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </TableBox>
+            </div>
 
+            {/* INFO TERPILIH */}
+            {selectMode && selected.length > 0 && (
+                <div className="flex-shrink-0 pt-4 text-right">
+                    <button className="bg-red-600 text-white px-6 py-2 rounded-xl text-xs font-bold shadow-lg">
+                        Hapus {selected.length} Data
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
