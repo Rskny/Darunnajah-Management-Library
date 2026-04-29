@@ -110,10 +110,40 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const updateData = req.body;
-        await db('books').where({ id }).update(updateData);
+        const { 
+            title, 
+            author, 
+            year, 
+            publisher, 
+            isbn, 
+            category, 
+            stock, 
+            source,
+            inputDate 
+        } = req.body;
+
+        // Kita map satu per satu sesuai kolom di migrasi kamu
+        const count = await db('books').where({ id }).update({
+            title: title,
+            author: author,
+            year: year,
+            publisher: publisher,
+            isbn: isbn || null,
+            category: category,
+            stock: Number(stock), // Pastikan angka
+            source: source,
+            inputDate: inputDate,
+            // 'available' otomatis update berdasarkan stok
+            available: Number(stock) > 0 ? true : false 
+        });
+
+        if (count === 0) {
+            return res.status(404).json({ error: 'Buku tidak ditemukan' });
+        }
+
         res.json({ message: 'Buku berhasil diperbarui' });
     } catch (error) {
+        console.error("ERROR UPDATE:", error.message);
         res.status(500).json({ error: 'Gagal memperbarui buku', detail: error.message });
     }
 });

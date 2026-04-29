@@ -5,6 +5,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const authenticateToken = require('../authMiddleware');
 
+const { sendResetPasswordEmail } = require('../utils/mailer.js');
+
+
 /**
  * @swagger
  * /api/auth/login:
@@ -89,6 +92,103 @@ router.post('/register', async (req, res) => {
         res.status(201).json({ message: 'Admin sukses didaftarkan' });
     } catch (error) {
         res.status(500).json({ error: 'Gagal register', detail: error.message });
+    }
+});
+
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Mengirim email reset password
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email: { type: string }
+ *     responses:
+ *       200:
+ *         description: Email berhasil dikirim
+ *       404:
+ *         description: Email tidak ditemukan
+ */
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        // 1. Cek apakah email terdaftar
+        const user = await db('admins').where({ email }).first();
+
+        if (!user) {
+            return res.status(404).json({ message: 'Email tidak terdaftar di sistem kami' });
+        }
+
+        // 2. Buat Token unik
+        const resetToken = Math.random().toString(36).substring(2, 15);
+
+        // --- TAMBAHKAN BAGIAN INI ---
+        // Simpan token ke database agar nanti bisa dicek pas reset password
+        await db('admins').where({ email }).update({
+            reset_token: resetToken // Pastikan di tabel 'admins' sudah ada kolom reset_token
+        });
+        // ----------------------------
+
+        // 3. Kirim Email
+        await sendResetPasswordEmail(email, resetToken);
+
+        res.json({ message: 'Link reset password telah dikirim ke email Anda!' });
+    } catch (error) {
+        res.status(500).json({ error: 'Gagal memproses lupa password', detail: error.message });
+    }
+});
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset password menggunakan token
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token: { type: string }
+ *               newPassword: { type: string }
+ *     responses:
+ *       200:
+ *         description: Password berhasil diubah
+ */
+router.post('/reset-password', async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+
+        // 1. Cari admin yang memiliki token tersebut
+        const user = await db('admins').where({ reset_token: token }).first();
+
+        if (!user) {
+            return res.status(400).json({ message: 'Token tidak valid atau sudah kadaluarsa' });
+        }
+
+        // 2. Hash password baru
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // 3. Update database dan hapus tokennya
+        await db('admins').where({ id: user.id }).update({
+            password: hashedPassword,
+            reset_token: null 
+        });
+
+        res.json({ message: 'Password berhasil diperbarui!' });
+    } catch (error) {
+        res.status(500).json({ error: 'Gagal reset password', detail: error.message });
     }
 });
 

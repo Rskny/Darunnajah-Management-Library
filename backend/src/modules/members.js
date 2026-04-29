@@ -89,4 +89,29 @@ router.delete('/:id', authenticateToken, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/members/selection:
+ *   get:
+ *     summary: Mendapatkan daftar nama anggota untuk pilihan dropdown (peminjaman/kunjungan)
+ *     tags : [Members]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Berhasil mendapatkan list seleksi
+ */
+router.get('/selection', authenticateToken, async (req, res) => {
+    try {
+        // Mengambil data spesifik untuk kebutuhan dropdown dan autofill
+        const members = await db('members')
+            .select('id', 'nama', 'status', 'kelas', 'jurusan')
+            .orderBy('nama', 'asc');
+            
+        res.json(members);
+    } catch (error) {
+        res.status(500).json({ error: 'Gagal mengambil list seleksi anggota', detail: error.message });
+    }
+});
+
 module.exports = router;

@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CLASS_CODES, MAJORS } from "../constants/data";
 import { useHistory } from "../context/HistoryContext";
 import apiClient from "../apiClient";
+import Select from "react-select"; // Import react-select
 
-const ROLES = ["Siswa", "Guru"];
 const GENDERS = ["Laki-laki", "Perempuan"];
 
 interface Props {
@@ -14,16 +14,55 @@ interface Props {
 const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
   const { addHistory } = useHistory();
 
+  // State untuk data dari backend
+  const [memberOptions, setMemberOptions] = useState([]);
+  const [isLoadingMembers, setIsLoadingMembers] = useState(true);
+
   const [formData, setFormData] = useState({
     name: "",
     role: "Siswa",
-    class: CLASS_CODES[0],
-    major: MAJORS[0],
+    class: "-",
+    major: "-",
     gender: GENDERS[0],
     quantity: 1
   });
 
   const [days, setDays] = useState(7);
+
+  // 1. Fetch daftar anggota saat modal dibuka
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const res = await apiClient.get("/members/selection");
+        const formatted = res.data.map((m: any) => ({
+          value: m.id,
+          label: m.nama,
+          raw: m // Simpan data lengkap untuk autofill
+        }));
+        setMemberOptions(formatted);
+      } catch (err) {
+        console.error("Gagal memuat anggota:", err);
+      } finally {
+        setIsLoadingMembers(false);
+      }
+    };
+    fetchMembers();
+  }, []);
+
+  // 2. Handler saat nama dipilih (Autofill)
+  const handleSelectMember = (selected: any) => {
+    if (selected) {
+      const { nama, status, kelas, jurusan, gender } = selected.raw;
+      setFormData({
+        ...formData,
+        name: nama,
+        role: status,
+        class: kelas,
+        major: jurusan,
+        gender: gender || GENDERS[0]
+      });
+    }
+  };
 
   const handleChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -51,7 +90,6 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
       const due = new Date();
       due.setDate(today.getDate() + days);
 
-      // POST transaksi ke backend
       await apiClient.post("/transactions", {
         bookId: foundBook.id,
         studentName: formData.name,
@@ -65,7 +103,6 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
         dueDate: due.toISOString().split('T')[0]
       });
 
-      // Simpan ke history lokal
       addHistory({
         date: new Date().toISOString(),
         name: formData.name,
@@ -76,14 +113,9 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
         description: "-"
       });
 
-      // AUTO-REFRESH tabel transaksi & stok buku
       window.dispatchEvent(new Event("transactionsUpdated"));
       window.dispatchEvent(new Event("booksUpdated"));
-
-      // Tutup modal
       onClose();
-
-      // 🔄 Refresh halaman
       window.location.reload();
 
     } catch (err) {
@@ -99,132 +131,76 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
         {/* HEADER */}
         <div className="p-6 border-b flex justify-between items-center bg-slate-50/30">
           <h3 className="text-2xl font-bold text-slate-800">Peminjaman Buku</h3>
-          <button
-            onClick={() => { onClose(); window.location.reload(); }}
-            className="p-2 text-slate-400 hover:bg-slate-100 rounded-full"
-          >
-            ✕
-          </button>
+          <button onClick={() => { onClose(); window.location.reload(); }} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full">✕</button>
         </div>
 
         {/* BODY */}
         <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-
-          {/* BOOK INFO */}
           <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-1">
-              Buku Dipilih
-            </p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-1">Buku Dipilih</p>
             <h4 className="font-bold text-blue-800">{bookTitle}</h4>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-
-            {/* NAMA */}
+            
+            {/* SEARCHABLE DROPDOWN NAMA */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase text-slate-500">
-                Nama Lengkap *
-              </label>
-              <input
-                required
-                type="text"
-                value={formData.name}
-                onChange={(e) => handleChange("name", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-slate-100 focus:ring-2 focus:ring-blue-600 font-medium"
-                placeholder="Nama Peminjam"
+              <label className="text-xs font-bold uppercase text-slate-500">Nama Peminjam *</label>
+              <Select
+                isLoading={isLoadingMembers}
+                options={memberOptions}
+                onChange={handleSelectMember}
+                placeholder="Cari nama anggota..."
+                isClearable
+                className="font-medium"
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    borderRadius: '0.75rem',
+                    padding: '3px',
+                    border: 'none',
+                    backgroundColor: '#f1f5f9', // slate-100
+                  }),
+                }}
               />
             </div>
 
             {/* JUMLAH */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase text-slate-500">
-                Jumlah *
-              </label>
+              <label className="text-xs font-bold uppercase text-slate-500">Jumlah *</label>
               <input
                 required
                 type="number"
                 min="1"
                 value={formData.quantity}
                 onChange={(e) => handleChange("quantity", parseInt(e.target.value) || 1)}
-                className="w-full px-4 py-3 rounded-xl bg-slate-100 focus:ring-2 focus:ring-blue-600 font-medium"
+                className="w-full px-4 py-3 rounded-xl bg-slate-100 focus:ring-2 focus:ring-blue-600 font-medium border-none outline-none"
               />
             </div>
 
-            {/* ROLE */}
-            <div>
-              <label className="text-xs font-bold uppercase text-slate-500">Role</label>
-              <div className="flex space-x-2 mt-1">
-                {ROLES.map(r => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => handleChange("role", r)}
-                    className={`flex-1 py-2 rounded-xl font-bold text-xs transition ${formData.role === r
-                      ? "bg-indigo-700 text-white shadow"
-                      : "bg-slate-50 text-slate-400 border"
-                      }`}
-                  >
-                    {r}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* KELAS + JURUSAN */}
+            {/* KELAS + JURUSAN (AUTO-FILLED) */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold uppercase text-slate-500">Kelas</label>
-                <select
-                  disabled={formData.role === "Guru"}
-                  value={formData.class}
-                  onChange={(e) => handleChange("class", e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl font-bold ${formData.role === "Guru"
-                    ? "bg-slate-200 opacity-60"
-                    : "bg-slate-100"
-                    }`}
-                >
-                  {CLASS_CODES.map(c => (
-                    <option key={c}>{c}</option>
-                  ))}
-                </select>
+                <input readOnly value={formData.class} className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed" />
               </div>
-
               <div>
                 <label className="text-xs font-bold uppercase text-slate-500">Jurusan</label>
-                <select
-                  disabled={formData.role === "Guru"}
-                  value={formData.major}
-                  onChange={(e) => handleChange("major", e.target.value)}
-                  className={`w-full px-4 py-3 rounded-xl font-bold ${formData.role === "Guru"
-                    ? "bg-slate-200 opacity-60"
-                    : "bg-slate-100"
-                    }`}
-                >
-                  {MAJORS.map(m => (
-                    <option key={m}>{m}</option>
-                  ))}
-                </select>
+                <input readOnly value={formData.major} className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed" />
               </div>
             </div>
 
-            {/* GENDER */}
-            <div>
-              <label className="text-xs font-bold uppercase text-slate-500">Gender</label>
-              <div className="flex space-x-2 mt-1">
-                {GENDERS.map(g => (
-                  <button
-                    key={g}
-                    type="button"
-                    onClick={() => handleChange("gender", g)}
-                    className={`flex-1 py-2 rounded-xl font-bold text-xs ${formData.gender === g
-                      ? "bg-blue-800 text-white shadow"
-                      : "bg-slate-50 text-slate-400 border"
-                      }`}
-                  >
-                    {g}
-                  </button>
-                ))}
-              </div>
+            <div className="grid grid-cols-2 gap-4">
+               {/* ROLE (AUTO-FILLED) */}
+               <div>
+                  <label className="text-xs font-bold uppercase text-slate-500">Role</label>
+                  <input readOnly value={formData.role} className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed" />
+               </div>
+               {/* GENDER (AUTO-FILLED) */}
+               <div>
+                  <label className="text-xs font-bold uppercase text-slate-500">Gender</label>
+                  <input readOnly value={formData.gender} className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed" />
+               </div>
             </div>
 
             {/* DURASI */}
@@ -236,10 +212,7 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
                     key={d}
                     type="button"
                     onClick={() => setDays(d)}
-                    className={`flex-1 py-2 rounded-xl font-bold text-xs ${days === d
-                      ? "bg-slate-800 text-white shadow"
-                      : "bg-slate-50 text-slate-400"
-                      }`}
+                    className={`flex-1 py-2 rounded-xl font-bold text-xs transition ${days === d ? "bg-slate-800 text-white shadow" : "bg-slate-50 text-slate-400 border"}`}
                   >
                     {d} Hari
                   </button>
@@ -247,14 +220,9 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
               </div>
             </div>
 
-            {/* SUBMIT */}
-            <button
-              type="submit"
-              className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold mt-4 hover:bg-blue-700 transition active:scale-95"
-            >
+            <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold mt-4 hover:bg-blue-700 transition active:scale-95 shadow-lg shadow-blue-200">
               Konfirmasi Peminjaman
             </button>
-
           </form>
         </div>
       </div>

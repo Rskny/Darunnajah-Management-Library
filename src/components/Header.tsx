@@ -82,7 +82,8 @@ const Header: React.FC = () => {
     "A";
 
   return (
-    <header className="w-full flex justify-between items-center px-8 py-4 bg-white border-b border-slate-200 shadow-sm relative z-40">
+    /* PERUBAHAN DI SINI: relative diubah menjadi sticky top-0 */
+    <header className="w-full flex justify-between items-center px-8 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm sticky top-0 z-40">
 
       {/* LEFT ICON TITLE */}
       <div className="flex items-center gap-4 text-slate-700">
@@ -136,7 +137,6 @@ const Header: React.FC = () => {
           {/* DROPDOWN MENU */}
           {openMenu && (
             <div className="absolute right-0 mt-3 w-64 bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden z-[9999] animate-in fade-in zoom-in duration-200">
-
               <div className="px-6 py-5 bg-slate-50/50">
                 <p className="font-bold text-slate-900 text-sm truncate">
                   {safeUser.name}
@@ -172,10 +172,8 @@ const Header: React.FC = () => {
                   Logout
                 </button>
               </div>
-
             </div>
           )}
-
         </div>
       </div>
 

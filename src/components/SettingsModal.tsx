@@ -23,7 +23,7 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
   });
 
   // Base URL Backend kamu
-  const API_BASE = "http://localhost:5000/api/settings";
+  const API_BASE = "http://localhost:9602/api/settings";
 
   /* EFFECT: Ambil data dengan Token Authentication */
   useEffect(() => {

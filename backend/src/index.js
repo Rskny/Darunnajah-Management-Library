@@ -13,7 +13,7 @@ const visitsRoutes = require('./modules/visits');
 const systemRoutes = require('./modules/system');
 const dashboardRoutes = require('./modules/dashboard');
 const reportsRoutes = require('./modules/reports');
-const settingsRoutes = require('./modules/settings'); // Route yang baru dibuat
+const settingsRoutes = require('./modules/settings'); 
 
 const app = express();
 
@@ -45,7 +45,7 @@ const swaggerOptions = {
             bearerAuth: []
         }],
     },
-    // Pastikan path ini benar mengarah ke folder modules kamu
+    // Pastikan path ini benar mengarah ke folder modules kamu agar rute forgot-password muncul di Swagger
     apis: ['./src/modules/*.js'], 
 };
 
@@ -55,7 +55,10 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 // ==========================================
 // DAFTARKAN SEMUA ROUTE UTAMA
 // ==========================================
-app.use('/api/auth', authRoutes);
+
+// Rute ini sekarang mencakup: /login, /register, /admins, dan /forgot-password
+app.use('/api/auth', authRoutes); 
+
 app.use('/api/books', booksRoutes);
 app.use('/api/members', membersRoutes);
 app.use('/api/transactions', transactionsRoutes);
@@ -63,12 +66,12 @@ app.use('/api/visits', visitsRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportsRoutes);
-app.use('/api/settings', settingsRoutes); // Pendaftaran Route Settings
+app.use('/api/settings', settingsRoutes);
 
 // ==========================================
 // JALANKAN SERVER
 // ==========================================
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 9602; // Sesuaikan dengan port yang kamu pakai di screenshot (9602)
 app.listen(PORT, () => {
     console.log(`================================================`);
     console.log(`🚀 Server Backend Berjalan di http://localhost:${PORT}`);

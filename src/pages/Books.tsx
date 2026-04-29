@@ -11,6 +11,7 @@ const Books: React.FC = () => {
   const [selected, setSelected] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [isEditing, setIsEditing] = useState(false); // State baru untuk mode edit
 
   const [sort, setSort] = useState<"asc" | "desc">("desc");
   const [limit, setLimit] = useState<number | string>(10);
@@ -39,6 +40,17 @@ const Books: React.FC = () => {
       setShowForm(false);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleUpdateBook = async (bookData: any) => {
+    try {
+      await apiClient.put(`/books/${selectedBook?.id}`, bookData);
+      fetchBooks();
+      setIsEditing(false);
+      setSelectedBook(null);
+    } catch (err) {
+      console.error("Gagal update buku:", err);
     }
   };
 
@@ -120,7 +132,7 @@ const Books: React.FC = () => {
             </button>
           )}
 
-          <button onClick={() => setShowForm(true)} className="px-6 py-2 rounded-full bg-[#3b5998] text-white font-semibold text-xs shadow-md">
+          <button onClick={() => { setShowForm(true); setIsEditing(false); }} className="px-6 py-2 rounded-full bg-[#3b5998] text-white font-semibold text-xs shadow-md">
             + Input Buku
           </button>
         </div>
@@ -152,8 +164,7 @@ const Books: React.FC = () => {
                 <th className="p-4 text-center">Asal Buku</th>
                 <th className="p-4 text-center">Tahun</th>
                 <th className="p-4 text-center">Stok</th>
-                {/* PERBAIKAN: Gunakan text-center dan lebar tetap agar selaras */}
-                <th className="p-4 text-center w-32">Aksi</th>
+                <th className="p-4 text-center w-40">Aksi</th>
               </tr>
             </thead>
 
@@ -201,19 +212,36 @@ const Books: React.FC = () => {
                       {book.stock}
                     </span>
                   </td>
-                  {/* PERBAIKAN: text-center agar pas di bawah tulisan AKSI */}
                   <td className="p-4 text-center">
-                    <button
-                      onClick={() => setSelectedBook(book)}
-                      disabled={!book.available}
-                      className={`w-24 py-1.5 text-[10px] rounded-lg font-bold transition-all ${
-                        book.available 
-                        ? "bg-[#3b5998] text-white hover:bg-[#2d4373]" 
-                        : "bg-slate-100 text-slate-300 cursor-not-allowed"
-                      }`}
-                    >
-                      {book.available ? "Pinjam" : "Habis"}
-                    </button>
+                    <div className="flex items-center justify-center gap-2">
+                      {/* TOMBOL EDIT (Icon Pensil) */}
+                      <button
+                        onClick={() => {
+                          setSelectedBook(book);
+                          setIsEditing(true);
+                        }}
+                        className="p-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 border border-amber-200 transition-all"
+                        title="Edit Buku"
+                      >
+                        <span className="text-xs">✎</span>
+                      </button>
+
+                      {/* TOMBOL PINJAM */}
+                      <button
+                        onClick={() => {
+                          setSelectedBook(book);
+                          setIsEditing(false);
+                        }}
+                        disabled={!book.available}
+                        className={`w-20 py-1.5 text-[10px] rounded-lg font-bold transition-all ${
+                          book.available 
+                          ? "bg-[#3b5998] text-white hover:bg-[#2d4373]" 
+                          : "bg-slate-100 text-slate-300 cursor-not-allowed"
+                        }`}
+                      >
+                        {book.available ? "Pinjam" : "Habis"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -222,15 +250,22 @@ const Books: React.FC = () => {
         </div>
       </div>
 
-      {showForm && (
+      {/* MODAL SECTION - Dinamis untuk Tambah/Edit */}
+      {(showForm || isEditing) && (
         <BookFormModal 
-          onClose={() => setShowForm(false)} 
-          onSubmit={handleAddBook} 
+          onClose={() => {
+            setShowForm(false);
+            setIsEditing(false);
+            setSelectedBook(null);
+          }} 
+          onSubmit={isEditing ? handleUpdateBook : handleAddBook} 
+          initialData={isEditing ? selectedBook : null}
           onBulkSubmit={() => {}} 
         />
       )}
 
-      {selectedBook && (
+      {/* MODAL PINJAM - Muncul hanya jika tidak sedang editing */}
+      {selectedBook && !isEditing && (
         <BorrowForm 
           bookTitle={selectedBook.title} 
           onClose={() => setSelectedBook(null)} 
