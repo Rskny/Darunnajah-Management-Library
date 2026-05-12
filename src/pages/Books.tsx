@@ -43,6 +43,21 @@ const Books: React.FC = () => {
     }
   };
 
+  const handleBulkAddBooks = async (booksArray: any[]) => {
+    try {
+      // Mengirim data buku satu per satu sesuai dengan API backend POST /books
+      for (const book of booksArray) {
+        await apiClient.post("/books", book);
+      }
+      fetchBooks(); // Refresh tabel setelah semua data masuk
+      setShowForm(false);
+      alert(`Berhasil mengimpor ${booksArray.length} buku ke database!`);
+    } catch (err) {
+      console.error("Gagal mengimpor CSV:", err);
+      alert("Ada masalah saat mengimpor data buku. Periksa koneksi backend.");
+    }
+  };
+
   const handleUpdateBook = async (bookData: any) => {
     try {
       await apiClient.put(`/books/${selectedBook?.id}`, bookData);
@@ -260,7 +275,7 @@ const Books: React.FC = () => {
           }} 
           onSubmit={isEditing ? handleUpdateBook : handleAddBook} 
           initialData={isEditing ? selectedBook : null}
-          onBulkSubmit={() => {}} 
+          onBulkSubmit={handleBulkAddBooks} 
         />
       )}
 

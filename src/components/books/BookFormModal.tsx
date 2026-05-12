@@ -56,19 +56,26 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
       const text = event.target?.result as string;
       const lines = text.split('\n');
       const books: any[] = [];
+      
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
-        const [title, isbn, author, year, publisher, category, stock, source] = line.split(',');
+        
+        // Regex ini memotong koma dengan aman, mengabaikan koma yang dibungkus tanda kutip ""
+        const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
+        const cleanFields = matches.map(field => field.replace(/^"|"$/g, '').trim());
+
+        const [title, isbn, author, year, publisher, category, stock, source] = cleanFields;
+
         books.push({
-          title: title?.trim() || 'Judul Kosong',
-          author: author?.trim() || 'Penulis Kosong',
-          year: year?.trim() || '2025',
-          publisher: publisher?.trim() || 'Penerbit',
-          isbn: isbn?.trim() || 'ISBN',
-          category: category?.trim() || CATEGORIES[0],
-          stock: parseInt(stock?.trim()) || 1,
-          source: (source?.trim() as Book['source']) || 'Pembelian',
+          title: title || 'Judul Kosong',
+          isbn: isbn || '-',
+          author: author || 'Unknown',
+          year: year || new Date().getFullYear().toString(),
+          publisher: publisher || '-',
+          category: category || CATEGORIES[0],
+          stock: parseInt(stock) || 1,
+          source: (source as Book['source']) || 'Pembelian',
           inputDate: new Date().toISOString().split('T')[0]
         });
       }
@@ -105,24 +112,39 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
               <label className="text-[10px] font-black text-slate-500 uppercase ml-2">Judul Buku</label>
               <input required value={formData.title} onChange={(e) => handleChange('title', e.target.value)} className="w-full px-5 py-3.5 bg-slate-50 border rounded-2xl font-bold" />
             </div>
+            
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-500 uppercase ml-2">ISBN</label>
+              <input required value={formData.isbn} onChange={(e) => handleChange('isbn', e.target.value)} className="w-full px-5 py-3.5 bg-slate-50 border rounded-2xl font-bold" />
+            </div>
+
             <div className="space-y-1">
               <label className="text-[10px] font-black text-slate-500 uppercase ml-2">Pengarang</label>
               <input required value={formData.author} onChange={(e) => handleChange('author', e.target.value)} className="w-full px-5 py-3.5 bg-slate-50 border rounded-2xl font-bold" />
             </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-black text-slate-500 uppercase ml-2">Penerbit</label>
+              <input required value={formData.publisher} onChange={(e) => handleChange('publisher', e.target.value)} className="w-full px-5 py-3.5 bg-slate-50 border rounded-2xl font-bold" />
+            </div>
+
             <div className="space-y-1">
               <label className="text-[10px] font-black text-slate-500 uppercase ml-2">Tahun</label>
               <input required value={formData.year} onChange={(e) => handleChange('year', e.target.value)} className="w-full px-5 py-3.5 bg-slate-50 border rounded-2xl font-bold" />
             </div>
+
             <div className="space-y-1">
               <label className="text-[10px] font-black text-slate-500 uppercase ml-2">Stok</label>
-              <input type="number" value={formData.stock} onChange={(e) => handleChange('stock', parseInt(e.target.value))} className="w-full px-5 py-3.5 bg-slate-50 border rounded-2xl font-bold" />
+              <input type="number" min="1" value={formData.stock} onChange={(e) => handleChange('stock', parseInt(e.target.value) || 0)} className="w-full px-5 py-3.5 bg-slate-50 border rounded-2xl font-bold" />
             </div>
+
             <div className="space-y-1">
               <label className="text-[10px] font-black text-slate-500 uppercase ml-2">Kategori</label>
               <select value={formData.category} onChange={(e) => handleChange('category', e.target.value)} className="w-full px-5 py-3.5 bg-slate-50 border rounded-2xl font-bold">
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
+
             <div className="md:col-span-2 pt-6 flex gap-4">
               <button type="submit" className="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase">
                 {initialData ? "Simpan Perubahan" : "Simpan Buku"}
