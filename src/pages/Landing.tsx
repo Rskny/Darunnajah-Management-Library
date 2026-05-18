@@ -33,28 +33,28 @@ export default function Landing() {
 
       {/* NAVBAR MODERN */}
       <nav className="flex items-center justify-between px-6 md:px-12 py-4 bg-[#0A1128] text-white sticky top-0 z-50 shadow-md">
-        {/* Sisi Kiri: Tombol Akses Autentikasi */}
-        <div className="flex items-center gap-3">
-          {/* Register Icon (SVG) */}
+        {/* Sisi Kiri: Tombol Akses Autentikasi dengan Teks & Ikon SVG */}
+        <div className="flex items-center gap-4">
+          {/* Tombol Register */}
           <button 
             onClick={() => setRegisterOpen(true)}
-            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition border border-slate-700 text-cyan-400"
-            title="Register"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/80 transition border border-slate-700/60 text-cyan-400 group"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
             </svg>
+            <span className="text-xs font-bold tracking-wider uppercase hidden sm:inline">Register</span>
           </button>
           
-          {/* Login Icon (SVG) */}
+          {/* Tombol Login (Sudah Diperbaiki Jadi Ikon Panah MASUK) */}
           <button 
             onClick={() => setLoginOpen(true)}
-            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition border border-slate-700 text-cyan-400"
-            title="Sign In"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/80 transition border border-slate-700/60 text-cyan-400 group"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
             </svg>
+            <span className="text-xs font-bold tracking-wider uppercase hidden sm:inline">Login</span>
           </button>
         </div>
 
@@ -82,7 +82,7 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* HERO SECTION (Diperluas Penuh Kebawah) */}
+      {/* HERO SECTION (Background ditarik penuh ke bawah) */}
       <section
         className="h-[92vh] flex flex-col items-center justify-center text-center text-white relative px-4"
         style={{
@@ -100,12 +100,12 @@ export default function Landing() {
             Explore Our Services
           </button>
 
-          {/* Judul Utama Utama Putih Murni */}
+          {/* Judul Utama Putih Murni */}
           <h2 className="text-5xl md:text-7xl font-bold leading-tight mb-5 text-white drop-shadow-lg">
             Welcome to <br /> Darunnajah Library
           </h2>
 
-          {/* Slogan Teks (Warna Biru Cyan Cerah Sesuai Mockup) */}
+          {/* Slogan Teks (Warna Biru Cyan Cerah) */}
           <p className="text-[12px] md:text-sm tracking-[0.3em] uppercase font-bold text-cyan-400 drop-shadow-md">
             Elevating Knowledge At Pondok Pesantren Darunnajah
           </p>
@@ -158,12 +158,12 @@ export default function Landing() {
           {/* Box Support Developer */}
           <div className="bg-[#E9E6DD] p-8 rounded-3xl border border-slate-300 flex flex-col gap-5">
             <div>
-              <h5 className="text-xs font-black text-[#0A1128] uppercase tracking-widest">Developer Contact</h5>
-              <p className="text-[10px] font-bold text-cyan-800 uppercase mt-1">Wanna ask something?</p>
+              <h5 className="text-xs font-black text-[#0A1128] uppercase tracking-widest">Support Developer</h5>
+              <p className="text-[10px] font-bold text-cyan-800 uppercase mt-1">Melayani kendala teknis anda</p>
             </div>
             
             <div className="bg-white p-4 rounded-2xl shadow-sm flex items-center gap-4">
-              {/* Email Icon (SVG) */}
+              {/* Email Icon SVG */}
               <div className="p-3 bg-cyan-50 text-cyan-600 rounded-xl">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />

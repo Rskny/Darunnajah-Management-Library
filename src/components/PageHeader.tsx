@@ -35,7 +35,12 @@ const PageHeader: React.FC<Props> = ({
   };
 
   return (
-    <div className="mb-6">
+    /* PERUBAHAN DI SINI:
+      - Mengubah mb-6 menjadi pb-4 (agar jarak ke garis bawah konsisten)
+      - Menambahkan `sticky top-0 z-30 bg-white` supaya dia mengunci di atas area konten.
+      - Ditambahkan `-mx-8 px-8 pt-4` (opsional) jika kamu ingin background putih header ini melebar rata dengan padding halaman utamamu.
+    */
+    <div className="sticky top-0 z-30 bg-white pt-4 pb-2 mb-6">
 
       {/* HEADER ROW */}
       <div className="flex items-start justify-between">
@@ -57,25 +62,24 @@ const PageHeader: React.FC<Props> = ({
         <div className="flex items-center gap-3">
 
           {onLimitChange && (
-  <select
-    value={limit}
-    onChange={changeLimit}
-    className="px-3 py-2 text-xs rounded-xl border border-slate-200 font-semibold"
-  >
-    <option value={10}>Top 10</option>
-    <option value={25}>Top 25</option>
-    <option value={50}>Top 50</option>
-    <option value={100}>Top 100</option>
-    {/* TAMBAHKAN BARIS DI BAWAH INI */}
-    <option value={1000}>Top 1000</option> 
-    <option value={5000}>Semua Data</option>
-  </select>
-)}
+            <select
+              value={limit}
+              onChange={changeLimit}
+              className="px-3 py-2 text-xs rounded-xl border border-slate-200 font-semibold bg-white cursor-pointer outline-none"
+            >
+              <option value={10}>Top 10</option>
+              <option value={25}>Top 25</option>
+              <option value={50}>Top 50</option>
+              <option value={100}>Top 100</option>
+              <option value={1000}>Top 1000</option> 
+              <option value={5000}>Semua Data</option>
+            </select>
+          )}
 
           {onSortChange && (
             <button
               onClick={changeOrder}
-              className="px-4 py-2 bg-slate-200 rounded-xl text-xs font-bold"
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold transition-colors"
             >
               {order === "asc" ? "Ascending" : "Descending"}
             </button>

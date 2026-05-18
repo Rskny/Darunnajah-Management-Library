@@ -95,7 +95,9 @@ const Visits: React.FC = () => {
     .slice(0, limit);
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-8 space-y-6">
+      
+      {/* HEADER UTAMA: Tetap berada di atas layout normal halaman */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
         <PageHeader
           title="Kunjungan Hari Ini"
@@ -113,47 +115,53 @@ const Visits: React.FC = () => {
         />
       </div>
 
+      {/* BANNER INFO */}
       <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium">
         Data kunjungan hanya tampil 24 jam lalu otomatis masuk riwayat.
       </div>
 
-      <TableBox>
-        <table className="w-full text-sm">
-          <thead className="bg-slate-100 text-xs uppercase">
-            <tr>
-              <th className="p-4 text-center w-16">No</th>
-              <th className="p-4 text-left">Nama</th>
-              <th className="p-4 text-left">Kelas</th>
-              <th className="p-4 text-left">Status</th>
-              <th className="p-4 text-left">Tujuan</th>
-              <th className="p-4 text-left">Tanggal</th>
-              <th className="p-4 text-left">Waktu</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {sorted.length === 0 ? (
+      {/* KUNCI UTAMA: Disini kita bungkus TableBox dengan overflow-y-auto dan max-height 
+          agar area tabel punya scroll tersendiri, sehingga PageHeader di atas dijamin DIAM! */}
+      <div className="overflow-y-auto max-h-[58vh] rounded-3xl border border-slate-200 shadow-sm bg-white">
+        <TableBox>
+          <table className="w-full text-sm">
+            {/* Judul kolom tabel (thead) dipasang sticky top agar dia tidak hilang saat baris disorot ke bawah */}
+            <thead className="bg-slate-100 text-xs uppercase sticky top-0 z-10 shadow-sm">
               <tr>
-                <td colSpan={7} className="py-20 text-center text-slate-400">
-                  Belum ada kunjungan hari ini
-                </td>
+                <th className="p-4 text-center w-16">No</th>
+                <th className="p-4 text-left">Nama</th>
+                <th className="p-4 text-left">Kelas</th>
+                <th className="p-4 text-left">Status</th>
+                <th className="p-4 text-left">Tujuan</th>
+                <th className="p-4 text-left">Tanggal</th>
+                <th className="p-4 text-left">Waktu</th>
               </tr>
-            ) : (
-              sorted.map((v, i) => (
-                <tr key={v.id} className="border-t hover:bg-slate-50">
-                  <td className="p-4 text-center font-semibold text-slate-500">{i + 1}</td>
-                  <td className="p-4">{v.name}</td>
-                  <td className="p-4">{v.kelas}</td>
-                  <td className="p-4">{v.chosing}</td>
-                  <td className="p-4">{v.purpose}</td>
-                  <td className="p-4">{new Date(v.date).toLocaleDateString("id-ID")}</td>
-                  <td className="p-4">{v.time}</td>
+            </thead>
+
+            <tbody>
+              {sorted.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-20 text-center text-slate-400">
+                    Belum ada kunjungan hari ini
+                  </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </TableBox>
+              ) : (
+                sorted.map((v, i) => (
+                  <tr key={v.id} className="border-t hover:bg-slate-50">
+                    <td className="p-4 text-center font-semibold text-slate-500">{i + 1}</td>
+                    <td className="p-4">{v.name}</td>
+                    <td className="p-4">{v.kelas}</td>
+                    <td className="p-4">{v.chosing}</td>
+                    <td className="p-4">{v.purpose}</td>
+                    <td className="p-4">{new Date(v.date).toLocaleDateString("id-ID")}</td>
+                    <td className="p-4">{v.time}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </TableBox>
+      </div>
 
       {showModal && (
         <VisitFormModal onClose={() => setShowModal(false)} onSubmit={handleAddVisit} />
