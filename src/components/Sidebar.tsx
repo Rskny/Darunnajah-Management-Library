@@ -4,6 +4,8 @@ import { Home, Users, Book, FileText, Clock, ClipboardList } from "lucide-react"
 import SettingsModal from "./SettingsModal";
 import { Icons } from "../constants/icons";
 
+// 1. IMPORT LOGO DARUNNAJAH
+import LogoDarunnajah from "../assets/logo darunnajah.png";
 
 const Sidebar: React.FC = () => {
   const [openSettings, setOpenSettings] = useState(false);
@@ -23,15 +25,22 @@ const Sidebar: React.FC = () => {
     <>
       <aside className="w-72 bg-white border-r border-slate-100 flex flex-col sticky top-0 h-screen hidden lg:flex shrink-0 print:hidden">
 
-        {/* LOGO */}
-        <div className="p-10">
-          <div className="flex items-center space-x-4 text-[#3b5998]">
-            <div className="bg-[#3b5998] p-2.5 rounded-2xl shadow-lg shadow-blue-100">
-              <svg viewBox="0 0 24 24" className="w-6 h-6 fill-white">
-                <path d="M12 3L1 9l11 6 9-4.91V17h2V9M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z" />
-              </svg>
+        {/* LOGO AREA */}
+        <div className="p-10 pb-6">
+          {/* DI SINI DIUBAH JADI space-x-2 BIAR TEKS DAN LOGO LEBIH MEPET */}
+          <div className="flex items-center space-x-2 text-[#3b5998]">
+            
+            {/* Gelembung (bubble) putih */}
+            <div className="bg-white p-2.5 rounded-full shadow-lg shadow-blue-100/50 w-16 h-16 flex items-center justify-center border border-slate-50 shrink-0">
+              <img 
+                src={LogoDarunnajah} 
+                alt="Logo Darunnajah" 
+                className="w-10 h-10 object-contain" 
+              />
             </div>
-            <span className="font-extrabold text-2xl tracking-tight">
+
+            {/* TEKS NAMA */}
+            <span className="font-extrabold text-2xl tracking-tight text-[#1F3A5F]">
               Darunnajah
             </span>
           </div>
@@ -59,8 +68,6 @@ const Sidebar: React.FC = () => {
               </NavLink>
             );
           })}
-
-      
         </nav>
 
         {/* FOOTER */}

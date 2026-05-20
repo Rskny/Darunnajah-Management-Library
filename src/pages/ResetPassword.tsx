@@ -1,4 +1,4 @@
-/* ResetPassword.tsx - Versi FIX No Error */
+/* ResetPassword.tsx - Versi FIX Akurat */
 
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -20,6 +20,10 @@ const ResetPassword = ({ onClose }: ResetPasswordProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Pastikan pesan error lama hilang setiap kali tombol ditekan ulang
+    setMessage("");
+
     if (password !== confirmPassword) {
       return setMessage("Password tidak cocok!");
     }
@@ -30,10 +34,21 @@ const ResetPassword = ({ onClose }: ResetPasswordProps) => {
         token,
         newPassword: password
       });
+
+      // Tampilkan info sukses
       alert("Password berhasil diubah!");
+      
+      // Amankan state sebelum pindah halaman agar tidak memicu block 'catch'
+      setMessage(""); 
+      
+      // Eksekusi penutupan modal dan pindah halaman
       onClose();
-      navigate('/');
+      navigate('/', { replace: true }); // Menggunakan replace agar history URL bersih
+      
     } catch (err: any) {
+      // Log error asli ke console untuk mempermudah debugging kamu jika backend bermasalah
+      console.error("Error dari backend:", err.response?.data || err.message);
+      
       setMessage("Gagal reset password.");
     } finally {
       setLoading(false);
@@ -61,6 +76,7 @@ const ResetPassword = ({ onClose }: ResetPasswordProps) => {
         </p>
       </div>
 
+      {/* Hanya muncul jika state message benar-benar berisi teks error */}
       {message && (
         <div className="bg-red-50 text-red-500 p-3 rounded-xl mb-6 text-xs text-center border border-red-100 font-medium">
           {message}
