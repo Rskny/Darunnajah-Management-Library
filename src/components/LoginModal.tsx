@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import apiClient from "../apiClient"; 
+import { Eye, EyeOff } from "lucide-react"; // Import ikon dari lucide-react
+import apiClient from "../apiClient";
+import LogoDarunnajah from "../assets/logo darunnajah.png"; // Sesuaikan path logo
 
 export default function LoginModal({ onClose, onSwitch }: any) {
   const { login } = useAuth();
@@ -42,16 +44,13 @@ export default function LoginModal({ onClose, onSwitch }: any) {
 
   return (
     <div className="fixed inset-0 z-[100] flex justify-center items-center p-4">
-      {/* Background Overlay - Hanya Gelap (Tanpa Blur) */}
       <div 
         className="absolute inset-0 bg-black/50" 
         onClick={onClose} 
       />
 
-      {/* Kontainer Modal Putih */}
       <div className="relative bg-white p-10 rounded-[2.5rem] w-full max-w-sm space-y-6 shadow-2xl z-10">
         
-        {/* Tombol Close (X) di Pojok Kanan Atas */}
         <button 
           onClick={onClose}
           className="absolute top-6 right-8 text-slate-300 hover:text-slate-500 transition-colors text-xl"
@@ -61,8 +60,12 @@ export default function LoginModal({ onClose, onSwitch }: any) {
 
         {!isForgot ? (
           <>
+            {/* Header dengan Logo */}
             <div className="space-y-1">
-              <h2 className="font-black text-2xl text-slate-800">Login</h2>
+              <div className="flex items-center gap-2">
+                <img src={LogoDarunnajah} alt="Logo" className="w-8 h-8 object-contain" />
+                <h2 className="font-black text-2xl text-slate-800">Login</h2>
+              </div>
               <p className="text-xs text-slate-400 font-medium">Masuk ke sistem Darunnajah Library</p>
             </div>
 
@@ -74,6 +77,7 @@ export default function LoginModal({ onClose, onSwitch }: any) {
                 onChange={e => setUsername(e.target.value)}
               />
 
+              {/* Password dengan Ikon Mata Profesional */}
               <div className="relative">
                 <input
                   type={show ? "text" : "password"}
@@ -81,12 +85,13 @@ export default function LoginModal({ onClose, onSwitch }: any) {
                   className="w-full px-5 py-3 rounded-2xl bg-slate-50 border border-slate-100 focus:border-blue-500 focus:bg-white outline-none transition text-sm"
                   onChange={e => setPassword(e.target.value)}
                 />
-                <span
+                <button
+                  type="button"
                   onClick={() => setShow(!show)}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 cursor-pointer opacity-30 hover:opacity-100"
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
                 >
-                  {show ? "🙈" : "👁️"}
-                </span>
+                  {show ? <Eye size={18} /> : <EyeOff size={18} />}
+                </button>
               </div>
             </div>
 
@@ -114,7 +119,6 @@ export default function LoginModal({ onClose, onSwitch }: any) {
             </p>
           </>
         ) : (
-          /* Tampilan Lupa Password tetap ada di sini */
           <>
             <div className="space-y-1">
               <h2 className="font-black text-2xl text-slate-800">Reset Password</h2>

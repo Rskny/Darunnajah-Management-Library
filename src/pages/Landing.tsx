@@ -118,7 +118,7 @@ export default function Landing() {
               </div>
             ))}
           </div>
-         
+          
          <div className="flex flex-col items-center mt-2">
   {/* Menggunakan flex dan gap-4 untuk memberi jarak antar kata */}
   <h3 className="flex gap-4 text-2xl md:text-3xl font-black tracking-tight text-white uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] mb-1">
@@ -136,7 +136,7 @@ export default function Landing() {
       </section>
 
       {/* SECTION GALLERY */}
-      <section ref={galleryRef} className="scroll-mt-20 bg-[#F9F6F0] pt-12 pb-24 px-6 md:px-12 flex flex-col items-center relative z-10 overflow-hidden">
+      <section ref={galleryRef} className="scroll-mt-[0px] bg-[#F9F6F0] pt-12 pb-24 px-6 md:px-12 flex flex-col items-center relative z-10 overflow-hidden">
         <div 
           className="absolute inset-0 w-full h-full pointer-events-none opacity-90 select-none z-0"
           style={{
@@ -144,11 +144,16 @@ export default function Landing() {
             filter: "blur(10px)"
           }}
         />
-        <div className="text-center mb-12 relative z-10">
-          <h3 className="text-2xl md:text-3xl font-black tracking-widest text-[#0A1128] uppercase drop-shadow-sm">
-            Library Gallery
-          </h3>
-          <div className="w-24 h-[4px] bg-cyan-700 mx-auto mt-3 rounded-full" />
+       <div className="text-center mb-12 relative z-10">
+          {/* Tambahkan flex dan items-center di sini */}
+          <div className="flex items-center justify-center gap-2">
+            <h3 className="text-2xl md:text-3xl font-black tracking-widest text-[#0A1128] uppercase drop-shadow-sm">
+              Library Gallery
+            </h3>
+            {/* Ini adalah kode untuk logo buku */}
+            <img src={LogoBuku} alt="Logo Buku" className="h-8 md:h-10 w-auto object-contain" />
+          </div>
+          <div className="w-64 h-[2px] bg-gradient-to-r from-transparent via-[#0A1128] to-transparent mx-auto mt-3 opacity-80" />
         </div>
 
         <div className="w-full flex flex-col gap-6 relative z-10 items-center">
@@ -176,7 +181,7 @@ export default function Landing() {
       </section>
 
       {/* SECTION CONTENT: PROFILE & LAYANAN */}
-      <section ref={serviceRef} className="scroll-mt-20 pt-12 pb-16 px-6 md:px-24 max-w-7xl mx-auto grid md:grid-cols-12 gap-8 items-start w-full bg-[#F9F6F0]">
+      <section ref={serviceRef} className="scroll-mt-0 pt-10 pb-40 px-6 md:px-24 max-w-7xl mx-auto grid md:grid-cols-12 gap-8 items-start w-full bg-[#F9F6F0]">
         <div className="md:col-span-7 flex flex-col items-start w-full">
           <div className="bg-[#0A1128] text-white px-4 py-2 rounded-t-xl text-xs font-bold tracking-wider flex items-center gap-2">
             <span>MODERN LIBRARY ECOSYSTEM</span>
