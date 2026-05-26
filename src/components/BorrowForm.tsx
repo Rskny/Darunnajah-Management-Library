@@ -145,7 +145,9 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
             
             {/* SEARCHABLE DROPDOWN NAMA */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase text-slate-500">Nama Peminjam *</label>
+              <label className="text-xs font-bold uppercase text-slate-500">
+                Nama Peminjam <span className="text-red-500">*</span>
+              </label>
               <Select
                 isLoading={isLoadingMembers}
                 options={memberOptions}
@@ -167,7 +169,9 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
 
             {/* JUMLAH */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase text-slate-500">Jumlah *</label>
+              <label className="text-xs font-bold uppercase text-slate-500">
+                Jumlah <span className="text-red-500">*</span>
+              </label>
               <input
                 required
                 type="number"
