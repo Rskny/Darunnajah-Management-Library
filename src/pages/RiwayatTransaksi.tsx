@@ -43,9 +43,32 @@ const Riwayat: React.FC = () => {
         setSelected(p => p.includes(id) ? p.filter(i => i !== id) : [...p, id]);
     };
 
+    // Fungsi Select All yang disesuaikan dengan data yang sudah di-filter/sort (sorted)
     const toggleAll = (currentData: Transaction[]) => {
-        if (selected.length === currentData.length) setSelected([]);
-        else setSelected(currentData.map(i => i.id));
+        if (selected.length === currentData.length && currentData.length > 0) {
+            setSelected([]);
+        } else {
+            setSelected(currentData.map(i => i.id));
+        }
+    };
+
+    // FUNGSI BARU: Untuk mengeksekusi penghapusan data ke API
+    const deleteSelected = async () => {
+        const confirmDelete = window.confirm(`Apakah Anda yakin ingin menghapus ${selected.length} data ini?`);
+        if (!confirmDelete) return;
+
+        try {
+            for (const id of selected) {
+                await apiClient.delete(`/transactions/${id}`);
+            }
+            setSelected([]);
+            setSelectMode(false);
+            fetchTransactions(); // Refresh data tabel setelah berhasil dihapus
+            alert("Data berhasil dihapus!");
+        } catch (error) {
+            console.error("Gagal menghapus data:", error);
+            alert("Terjadi kesalahan saat menghapus data.");
+        }
     };
 
     const sorted = [...history]
@@ -73,13 +96,15 @@ const Riwayat: React.FC = () => {
                     onSortChange={setSort}
                     onLimitChange={setLimit}
                     right={
-                        <button
-                            onClick={() => setSelectMode(!selectMode)}
-                            className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${
-                                selectMode ? "bg-red-500 text-white" : "bg-slate-200 text-slate-700"
-                            }`}>
-                            {selectMode ? "Batal" : "Pilih Data"}
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => { setSelectMode(!selectMode); setSelected([]); }}
+                                className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${
+                                    selectMode ? "bg-red-500 text-white" : "bg-slate-200 text-slate-700"
+                                }`}>
+                                {selectMode ? "Batal" : "Pilih Data"}
+                            </button>
+                        </div>
                     }
                 />
             </div>
@@ -96,7 +121,15 @@ const Riwayat: React.FC = () => {
                         <table className="w-full text-sm text-left border-collapse" style={{ minWidth: "1000px" }}>
                             <thead className="sticky top-0 z-30 bg-slate-100 text-slate-600 text-xs uppercase">
                                 <tr>
-                                    {selectMode && <th className="px-6 py-5 bg-slate-100 border-b w-16">Select</th>}
+                                    {selectMode && (
+                                        <th className="px-6 py-5 bg-slate-100 border-b w-16 text-center">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={selected.length === sorted.length && sorted.length > 0}
+                                                onChange={() => toggleAll(sorted)}
+                                            />
+                                        </th>
+                                    )}
                                     <th className="px-6 py-5 bg-slate-100 border-b w-12">No</th>
                                     <th className="px-6 py-5 bg-slate-100 border-b whitespace-nowrap">Judul Buku</th>
                                     <th className="px-6 py-5 bg-slate-100 border-b whitespace-nowrap">Nama Peminjam</th>
@@ -112,7 +145,7 @@ const Riwayat: React.FC = () => {
                             <tbody className="divide-y divide-slate-100">
                                 {sorted.length === 0 ? (
                                     <tr>
-                                        <td colSpan={10} className="py-20 text-center text-slate-400">Data Kosong</td>
+                                        <td colSpan={selectMode ? 11 : 10} className="py-20 text-center text-slate-400">Data Kosong</td>
                                     </tr>
                                 ) : (
                                     sorted.map((item, i) => {
@@ -124,7 +157,7 @@ const Riwayat: React.FC = () => {
                                         return (
                                             <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                                                 {selectMode && (
-                                                    <td className="px-6 py-4">
+                                                    <td className="px-6 py-4 text-center">
                                                         <input 
                                                             type="checkbox" 
                                                             checked={selected.includes(item.id)} 
@@ -159,10 +192,13 @@ const Riwayat: React.FC = () => {
                 </TableBox>
             </div>
 
-            {/* INFO TERPILIH */}
+            {/* INFO TERPILIH & TOMBOL EKSEKUSI HAPUS */}
             {selectMode && selected.length > 0 && (
                 <div className="flex-shrink-0 pt-4 text-right">
-                    <button className="bg-red-600 text-white px-6 py-2 rounded-xl text-xs font-bold shadow-lg">
+                    <button 
+                        onClick={deleteSelected}
+                        className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl text-xs font-bold shadow-lg transition-colors"
+                    >
                         Hapus {selected.length} Data
                     </button>
                 </div>
