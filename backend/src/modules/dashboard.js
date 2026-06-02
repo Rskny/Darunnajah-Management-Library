@@ -5,15 +5,29 @@ const authenticateToken = require('../authMiddleware');
 
 /**
  * @swagger
- * /api/dashboard:
+ * paths:
+ *  /api/dashboard:
  *   get:
- *     summary: Mendapatkan data ringkasan dashboard
- *     tags: [Dashboard]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Berhasil mendapatkan data ringkasan
+ *    summary: Mendapatkan data ringkasan dashboard
+ *    tags:
+ *     - Dashboard
+ *    security:
+ *     - bearerAuth: []
+ *    responses:
+ *     200:
+ *      description: Berhasil mendapatkan data ringkasan
+ *      content:
+ *       application/json:
+ *        schema:
+ *         type: object
+ *         example:
+ *          stats:
+ *           weeklyVisits: 0
+ *           activeLoans: 0
+ *           overdueCount: 0
+ *           totalBooks: 0
+ *          monthlyData: []
+ *          topLists: {}
  */
 router.get('/', authenticateToken, async (req, res) => {
     try {
@@ -59,14 +73,64 @@ router.get('/', authenticateToken, async (req, res) => {
             }
         });
 
+        // ==================== DAFTAR TOP LIST DENGAN TRY-CATCH AMAN ====================
+        let topVisitors = [];
+        let topBorrowers = [];
+
+        // 6. Ambil Top 3 Pengunjung Teraktif
+        try {
+            const rawVisitors = await db('visits')
+                .join('members', 'visits.member_id', '=', 'members.id') 
+                .select('members.name')
+                .count('* as count')
+                .groupBy('members.id', 'members.name')
+                .orderBy('count', 'desc')
+                .limit(3);
+
+            topVisitors = rawVisitors.map(v => ({
+                name: v.name,
+                count: Number(v.count),
+                subText: 'Siswa / Anggota'
+            }));
+        } catch (visError) {
+            console.log('💡 Note Top Visitors (Aman/Bukan Crash):', visError.message);
+        }
+
+        // 7. Ambil Top 3 Peminjam Buku Terbanyak
+        try {
+            const rawBorrowers = await db('transactions')
+                .join('members', 'transactions.member_id', '=', 'members.id') 
+                .select('members.name')
+                .count('* as count')
+                .groupBy('members.id', 'members.name')
+                .orderBy('count', 'desc')
+                .limit(3);
+
+            rawBorrowers.forEach(b => {
+                topBorrowers.push({
+                    name: b.name,
+                    count: Number(b.count),
+                    subText: 'Siswa / Anggota'
+                });
+            });
+        } catch (borError) {
+            console.log('💡 Note Top Borrowers (Aman/Bukan Crash):', borError.message);
+        }
+        // ====================================================================================
+
+        // Kirim semua response ke frontend
         res.json({
             stats: {
-                weeklyVisits,
-                activeLoans,
-                overdueCount,
-                totalBooks,
+                weeklyVisits: Number(weeklyVisits) || 0,
+                activeLoans: Number(activeLoans) || 0,
+                overdueCount: Number(overdueCount) || 0,
+                totalBooks: Number(totalBooks) || 0,
             },
-            monthlyData: monthly
+            monthlyData: monthly,
+            topLists: {              
+                visitors: topVisitors,
+                borrowers: topBorrowers
+            }
         });
     } catch (error) {
         res.status(500).json({ error: 'Gagal mendapatkan data dashboard', detail: error.message });
