@@ -24,7 +24,7 @@ const authenticateToken = require('../authMiddleware');
  *         required: true
  *         schema:
  *           type: integer
- *         description: Bulan (indeks 0-11)
+ *         description: Bulan (indeks 0-11) ATAU string "all" untuk laporan tahunan
  *       - in: query
  *         name: year
  *         required: true
@@ -43,19 +43,23 @@ router.get('/', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Parameter type, month, dan year wajib diisi' });
         }
 
-        // Bulan dari UI adalah 0-11, MySQL MONTH() menggunakan 1-12
-        const sqlMonth = parseInt(month) + 1;
+        const isYearly = month === 'all';
         const sqlYear = parseInt(year);
+        const sqlMonth = !isYearly ? parseInt(month) + 1 : null;
 
         let result = [];
 
         if (type === 'transaksi') {
-            const rawData = await db('transactions')
+            let query = db('transactions')
                 .select('transactions.*', 'books.title as bookTitle')
                 .leftJoin('books', 'transactions.bookId', 'books.id')
-                .whereRaw('MONTH(transactions.borrowDate) = ?', [sqlMonth])
-                .andWhereRaw('YEAR(transactions.borrowDate) = ?', [sqlYear])
-                .orderBy('transactions.id', 'desc');
+                .whereRaw('YEAR(transactions.borrowDate) = ?', [sqlYear]);
+
+            if (!isYearly) {
+                query = query.andWhereRaw('MONTH(transactions.borrowDate) = ?', [sqlMonth]);
+            }
+
+            const rawData = await query.orderBy('transactions.id', 'desc');
 
             result = rawData.map(item => ({
                 id: item.id,
@@ -66,13 +70,19 @@ router.get('/', authenticateToken, async (req, res) => {
                 bookTitle: item.bookTitle,
                 activity: `Peminjaman Buku ${item.bookTitle} (${item.quantity} buah)`,
                 status: item.status,
-                description: item.status === 'Dikembalikan' ? `Selesai (Tenggat: ${new Date(item.dueDate).toLocaleDateString('id-ID')})` : `Aktif (Tenggat: ${new Date(item.dueDate).toLocaleDateString('id-ID')})`
+                description: item.status === 'Dikembalikan' 
+                    ? `Selesai (Tenggat: ${new Date(item.dueDate).toLocaleDateString('id-ID')})` 
+                    : `Aktif (Tenggat: ${new Date(item.dueDate).toLocaleDateString('id-ID')})`
             }));
+
         } else if (type === 'kunjungan') {
-            const rawData = await db('visits')
-                .whereRaw('MONTH(date) = ?', [sqlMonth])
-                .andWhereRaw('YEAR(date) = ?', [sqlYear])
-                .orderBy('id', 'desc');
+            let query = db('visits').whereRaw('YEAR(date) = ?', [sqlYear]);
+
+            if (!isYearly) {
+                query = query.andWhereRaw('MONTH(date) = ?', [sqlMonth]);
+            }
+
+            const rawData = await query.orderBy('id', 'desc');
 
             result = rawData.map(item => ({
                 id: item.id,

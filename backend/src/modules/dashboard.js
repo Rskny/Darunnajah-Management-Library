@@ -89,7 +89,7 @@ try {
     topVisitors = rawVisitors.map(v => ({
         name: v.name,
         count: Number(v.count),
-        subText: 'Siswa / Anggota'
+        subText: 'Member of Library'
     }));
 } catch (visError) {
     console.log('💡 Note Top Visitors:', visError.message);
@@ -107,7 +107,7 @@ try {
     topBorrowers = rawBorrowers.map(b => ({
         name: b.studentName,
         count: Number(b.count),
-        subText: 'Siswa / Anggota'
+        subText: 'Member of Library'
     }));
 } catch (borError) {
     console.log('💡 Note Top Borrowers:', borError.message);

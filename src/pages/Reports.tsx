@@ -10,7 +10,8 @@ const months = [
 
 export default function Reports() {
   const [type, setType] = useState<"transaksi" | "kunjungan">("transaksi");
-  const [month, setMonth] = useState(new Date().getMonth());
+  // Mengubah tipe month menjadi string | number agar bisa menampung nilai "all"
+  const [month, setMonth] = useState<number | "all">(new Date().getMonth());
   const [year, setYear] = useState(new Date().getFullYear());
   const [reportData, setReportData] = useState<any[]>([]);
 
@@ -18,6 +19,7 @@ export default function Reports() {
     const fetchReport = async () => {
       try {
         const response = await apiClient.get("/reports", {
+          // Jika month bernilai "all", backend akan tahu bahwa ini request tahunan
           params: { type, month, year }
         });
         setReportData(response.data);
@@ -53,7 +55,10 @@ export default function Reports() {
     
     doc.setTextColor(100);
     doc.setFont("helvetica", "normal");
-    doc.text(`${months[month]} ${year}`, pageWidth - 20, 25, { align: "right" });
+    
+    // Penyesuaian sub-header teks periode waktu PDF
+    const periodeTeks = month === "all" ? `Tahun ${year}` : `${months[month as number]} ${year}`;
+    doc.text(periodeTeks, pageWidth - 20, 25, { align: "right" });
 
     doc.setDrawColor(226, 232, 240); 
     doc.line(20, 32, pageWidth - 20, 32);
@@ -66,7 +71,6 @@ export default function Reports() {
       body: reportData.map((item, index) => {
         const d = new Date(item.date);
         
-        // Membersihkan teks "(1 buah)" dari nama buku agar lebih rapi
         const cleanBookTitle = item.activity 
           ? item.activity.replace(/\(\d+\sbuah\)/gi, "").trim() 
           : "-";
@@ -77,7 +81,7 @@ export default function Reports() {
           item.name.toUpperCase(),
           item.role || "-",
           cleanBookTitle, 
-          item.quantity || "1", // Menampilkan QTY di kolom sendiri
+          item.quantity || "1", 
           item.status ? item.status.toUpperCase() : "-"
         ];
       }),
@@ -92,16 +96,15 @@ export default function Reports() {
         fontStyle: "bold",
         halign: 'center'
       },
-     /* Cari bagian columnStyles di dalam autoTable dan ganti dengan ini */
-columnStyles: {
-  0: { halign: 'center', cellWidth: 15 }, // NO: dinaikkan ke 15 agar tidak patah
-  1: { halign: 'center', cellWidth: 28 }, // TANGGAL: dinaikkan ke 28 agar "29/4/2026" muat satu baris
-  2: { fontStyle: 'bold', cellWidth: 35 }, 
-  3: { cellWidth: 20 },
-  4: { cellWidth: 'auto' }, 
-  5: { halign: 'center', cellWidth: 15 }, // QTY: dinaikkan ke 15 agar teks "QTY" aman
-  6: { halign: 'center', cellWidth: 30 }
-},
+      columnStyles: {
+        0: { halign: 'center', cellWidth: 15 }, 
+        1: { halign: 'center', cellWidth: 28 }, 
+        2: { fontStyle: 'bold', cellWidth: 35 }, 
+        3: { cellWidth: 20 },
+        4: { cellWidth: 'auto' }, 
+        5: { halign: 'center', cellWidth: 15 }, 
+        6: { halign: 'center', cellWidth: 30 }
+      },
       didParseCell: (data) => {
         if (data.section === "body" && data.column.index === 6) {
           const status = data.cell.raw as string;
@@ -138,7 +141,9 @@ columnStyles: {
     doc.setFont("helvetica", "normal");
     doc.text("NIP. 2026.04.29.001", pageWidth - 70, signY + 35);
 
-    doc.save(`Laporan_${type}_${month + 1}_${year}.pdf`);
+    // Penyesuaian nama file ketika didownload
+    const namaFile = month === "all" ? `Laporan_${type}_Tahunan_${year}.pdf` : `Laporan_${type}_${(month as number) + 1}_${year}.pdf`;
+    doc.save(namaFile);
   };
 
   return (
@@ -153,7 +158,13 @@ columnStyles: {
           <option value="kunjungan">Riwayat Kunjungan</option>
         </select>
 
-        <select value={month} onChange={e => setMonth(Number(e.target.value))} className="px-4 py-2 rounded-xl border text-sm font-medium bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none">
+        {/* Dropdown Bulan yang dimodifikasi */}
+        <select 
+          value={month} 
+          onChange={e => setMonth(e.target.value === "all" ? "all" : Number(e.target.value))} 
+          className="px-4 py-2 rounded-xl border text-sm font-medium bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none"
+        >
+          <option value="all">One Year Report</option>
           {months.map((m, i) => <option key={i} value={i}>{m}</option>)}
         </select>
 

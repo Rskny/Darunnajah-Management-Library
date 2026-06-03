@@ -191,7 +191,7 @@ const Input = ({ label, value, color }: any) => (
   <div className="space-y-1.5">
     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
     <input 
-      readOnly
+      onChange
       value={value} 
       className="w-full px-5 py-3 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white outline-none transition-all font-bold text-slate-700 text-sm"
       style={{ borderLeft: `4px solid ${color}` }}
