@@ -73,51 +73,49 @@ router.get('/', authenticateToken, async (req, res) => {
             }
         });
 
-        // ==================== DAFTAR TOP LIST DENGAN TRY-CATCH AMAN ====================
-        let topVisitors = [];
-        let topBorrowers = [];
+       // ==================== DAFTAR TOP LIST ====================
+let topVisitors = [];
+let topBorrowers = [];
 
-        // 6. Ambil Top 3 Pengunjung Teraktif
-        try {
-            const rawVisitors = await db('visits')
-                .join('members', 'visits.member_id', '=', 'members.id') 
-                .select('members.name')
-                .count('* as count')
-                .groupBy('members.id', 'members.name')
-                .orderBy('count', 'desc')
-                .limit(3);
+// 6. Ambil Top 3 Pengunjung Teraktif
+try {
+    const rawVisitors = await db('visits')
+        .select('name')
+        .count('* as count')
+        .groupBy('name')
+        .orderBy('count', 'desc')
+        .limit(3);
 
-            topVisitors = rawVisitors.map(v => ({
-                name: v.name,
-                count: Number(v.count),
-                subText: 'Siswa / Anggota'
-            }));
-        } catch (visError) {
-            console.log('💡 Note Top Visitors (Aman/Bukan Crash):', visError.message);
-        }
+    topVisitors = rawVisitors.map(v => ({
+        name: v.name,
+        count: Number(v.count),
+        subText: 'Siswa / Anggota'
+    }));
+} catch (visError) {
+    console.log('💡 Note Top Visitors:', visError.message);
+}
 
-        // 7. Ambil Top 3 Peminjam Buku Terbanyak
-        try {
-            const rawBorrowers = await db('transactions')
-                .join('members', 'transactions.member_id', '=', 'members.id') 
-                .select('members.name')
-                .count('* as count')
-                .groupBy('members.id', 'members.name')
-                .orderBy('count', 'desc')
-                .limit(3);
+// 7. Ambil Top 3 Peminjam Buku Terbanyak
+try {
+    const rawBorrowers = await db('transactions')
+        .select('studentName')
+        .count('* as count')
+        .groupBy('studentName')
+        .orderBy('count', 'desc')
+        .limit(3);
 
-            rawBorrowers.forEach(b => {
-                topBorrowers.push({
-                    name: b.name,
-                    count: Number(b.count),
-                    subText: 'Siswa / Anggota'
-                });
-            });
-        } catch (borError) {
-            console.log('💡 Note Top Borrowers (Aman/Bukan Crash):', borError.message);
-        }
-        // ====================================================================================
+    topBorrowers = rawBorrowers.map(b => ({
+        name: b.studentName,
+        count: Number(b.count),
+        subText: 'Siswa / Anggota'
+    }));
+} catch (borError) {
+    console.log('💡 Note Top Borrowers:', borError.message);
+}
 
+console.log('TOP VISITORS:', topVisitors);
+console.log('TOP BORROWERS:', topBorrowers);
+// ====================================================================================
         // Kirim semua response ke frontend
         res.json({
             stats: {

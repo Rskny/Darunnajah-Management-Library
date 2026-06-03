@@ -148,8 +148,8 @@ export default function Dashboard() {
                 <Bar dataKey="visits" name="Transaksi Peminjaman" radius={[10, 10, 0, 0]} fill="url(#purpleGradient)" />
                 <defs>
                   <linearGradient id="purpleGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#a78bfa" />
-                    <stop offset="100%" stopColor="#4c1d95" />
+                    <stop offset="0%" stopColor="#8be6fa" />
+                    <stop offset="100%" stopColor="#076179" />
                   </linearGradient>
                 </defs>
               </BarChart>
