@@ -11,7 +11,7 @@ const Books: React.FC = () => {
   const [selected, setSelected] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-  const [isEditing, setIsEditing] = useState(false); // State baru untuk mode edit
+  const [isEditing, setIsEditing] = useState(false);
 
   const [sort, setSort] = useState<"asc" | "desc">("desc");
   const [limit, setLimit] = useState<number | string>(10);
@@ -45,11 +45,10 @@ const Books: React.FC = () => {
 
   const handleBulkAddBooks = async (booksArray: any[]) => {
     try {
-      // Mengirim data buku satu per satu sesuai dengan API backend POST /books
       for (const book of booksArray) {
         await apiClient.post("/books", book);
       }
-      fetchBooks(); // Refresh tabel setelah semua data masuk
+      fetchBooks();
       setShowForm(false);
       alert(`Berhasil mengimpor ${booksArray.length} buku ke database!`);
     } catch (err) {
@@ -174,6 +173,7 @@ const Books: React.FC = () => {
                 )}
                 <th className="p-4 w-12 text-center">No</th>
                 <th className="p-4">Nama Buku</th>
+                <th className="p-4">ISBN</th> {/* <--- TAMBAHAN KOLOM ISBN */}
                 <th className="p-4">Penerbit</th>
                 <th className="p-4 text-center">Kategori</th>
                 <th className="p-4 text-center">Asal Buku</th>
@@ -210,6 +210,11 @@ const Books: React.FC = () => {
                       <span className="text-[10px] text-slate-400 font-medium italic">{book.author}</span>
                     </div>
                   </td>
+                  {/* --- ISI DATA ISBN --- */}
+                  <td className="p-4 text-xs font-mono text-slate-500 whitespace-nowrap">
+                    {book.isbn || "-"}
+                  </td>
+                  {/* --------------------- */}
                   <td className="p-4 text-xs text-slate-500 font-medium">{book.publisher || "-"}</td>
                   <td className="p-4 text-center">
                     <span className="text-[9px] font-bold text-slate-500 uppercase bg-slate-100 px-2 py-0.5 rounded">
@@ -229,7 +234,6 @@ const Books: React.FC = () => {
                   </td>
                   <td className="p-4 text-center">
                     <div className="flex items-center justify-center gap-2">
-                      {/* TOMBOL EDIT (Icon Pensil) */}
                       <button
                         onClick={() => {
                           setSelectedBook(book);
@@ -241,7 +245,6 @@ const Books: React.FC = () => {
                         <span className="text-xs">✎</span>
                       </button>
 
-                      {/* TOMBOL PINJAM */}
                       <button
                         onClick={() => {
                           setSelectedBook(book);
@@ -265,7 +268,6 @@ const Books: React.FC = () => {
         </div>
       </div>
 
-      {/* MODAL SECTION - Dinamis untuk Tambah/Edit */}
       {(showForm || isEditing) && (
         <BookFormModal 
           onClose={() => {
@@ -279,7 +281,6 @@ const Books: React.FC = () => {
         />
       )}
 
-      {/* MODAL PINJAM - Muncul hanya jika tidak sedang editing */}
       {selectedBook && !isEditing && (
         <BorrowForm 
           bookTitle={selectedBook.title} 

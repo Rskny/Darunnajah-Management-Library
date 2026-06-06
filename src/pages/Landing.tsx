@@ -9,9 +9,14 @@ import LogoDarunnajah from "../assets/logo darunnajah.png";
 import LogoBuku from "../assets/logo buku.png"; 
 import BackgroundPerpus from "../assets/perpustakaan.jpeg";
 import BICornerImg from "../assets/BI corner.jpg"; 
-import LayarImg from "../assets/layar.jpg";        
-import IbuUmiImg from "../assets/ibu umi.jpg"; 
+import LayarImg from "../assets/layar.jpg"; 
 import RakBukuImg from "../assets/rak buku.jpg"; 
+
+// IMPORT ASET PERPUS PUTRI
+import PerpusPutri1 from "../assets/perpus putri 1.jpg";
+import PerpusPutri2 from "../assets/perpus putri 2.jpg";
+import PerpusPutri3 from "../assets/perpus putri 3.jpg";
+import PerpusPutri4 from "../assets/perpus putri 4.jpg";
 
 export default function Landing() {
   const [loginOpen, setLoginOpen] = useState(false);
@@ -120,11 +125,11 @@ export default function Landing() {
           </div>
           
          <div className="flex flex-col items-center mt-2">
-  {/* Menggunakan flex dan gap-4 untuk memberi jarak antar kata */}
-  <h3 className="flex gap-4 text-2xl md:text-3xl font-black tracking-tight text-white uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] mb-1">
-    <span>Welcome</span>
-    <span>To</span>
-  </h3>
+          {/* Menggunakan flex dan gap-4 untuk memberi jarak antar kata */}
+          <h3 className="flex gap-4 text-2xl md:text-3xl font-black tracking-tight text-white uppercase drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] mb-1">
+            <span>Welcome</span>
+            <span>To</span>
+          </h3>
             <h2 className="text-5xl md:text-7xl font-black tracking-tight leading-tight mb-4 text-white drop-shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
               Darunnajah Library
             </h2>
@@ -145,36 +150,43 @@ export default function Landing() {
           }}
         />
        <div className="text-center mb-12 relative z-10">
-          {/* Tambahkan flex dan items-center di sini */}
-          <div className="flex items-center justify-center gap-2">
-            <h3 className="text-2xl md:text-3xl font-black tracking-widest text-[#0A1128] uppercase drop-shadow-sm">
-              Library Gallery
-            </h3>
-            {/* Ini adalah kode untuk logo buku */}
-            <img src={LogoBuku} alt="Logo Buku" className="h-8 md:h-10 w-auto object-contain" />
-          </div>
-          <div className="w-64 h-[2px] bg-gradient-to-r from-transparent via-[#0A1128] to-transparent mx-auto mt-3 opacity-80" />
-        </div>
+         <div className="flex items-center justify-center gap-2">
+           <h3 className="text-2xl md:text-3xl font-black tracking-widest text-[#0A1128] uppercase drop-shadow-sm">
+             Library Gallery
+           </h3>
+           <img src={LogoBuku} alt="Logo Buku" className="h-8 md:h-10 w-auto object-contain" />
+         </div>
+         <div className="w-64 h-[2px] bg-gradient-to-r from-transparent via-[#0A1128] to-transparent mx-auto mt-3 opacity-80" />
+       </div>
 
-        <div className="w-full flex flex-col gap-6 relative z-10 items-center">
-          <div className="grid grid-cols-3 gap-4 md:gap-6 w-full max-w-3xl justify-center">
+        <div className="w-full relative z-10 flex justify-center">
+          {/* MENGGUNAKAN GRID UNTUK MENATA 8 GAMBAR */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 w-full max-w-5xl">
             <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-xl border-4 border-white transform rotate-0 hover:-rotate-3 hover:scale-105 transition duration-300 cursor-pointer">
               <img src={BICornerImg} alt="BI Corner" className="w-full h-full object-cover" />
-            </div>
-            <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-xl border-4 border-white transform rotate-0 hover:translate-y-[-4px] hover:scale-105 transition duration-300 cursor-pointer">
-              <img src={IbuUmiImg} alt="Ibu Umi" className="w-full h-full object-cover" />
             </div>
             <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-xl border-4 border-white transform rotate-0 hover:rotate-3 hover:scale-105 transition duration-300 cursor-pointer">
               <img src={LayarImg} alt="Layar Presentasi" className="w-full h-full object-cover" />
             </div>
-          </div>
-
-          <div className="flex gap-4 md:gap-6 w-full justify-center max-w-3xl">
-            <div className="w-[31%] aspect-[4/3] rounded-2xl overflow-hidden shadow-xl border-4 border-white transform hover:-rotate-2 hover:scale-105 transition duration-300 cursor-pointer">
+            <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-xl border-4 border-white transform rotate-0 hover:-rotate-2 hover:scale-105 transition duration-300 cursor-pointer">
               <img src={BackgroundPerpus} alt="Rak Perpustakaan" className="w-full h-full object-cover" />
             </div>
-            <div className="w-[31%] aspect-[4/3] rounded-2xl overflow-hidden shadow-xl border-4 border-white transform hover:rotate-2 hover:scale-105 transition duration-300 cursor-pointer">
+            <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-xl border-4 border-white transform rotate-0 hover:rotate-2 hover:scale-105 transition duration-300 cursor-pointer">
               <img src={RakBukuImg} alt="Rak Buku" className="w-full h-full object-cover" />
+            </div>
+            
+            {/* 4 GAMBAR PERPUS PUTRI */}
+            <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-xl border-4 border-white transform rotate-0 hover:-rotate-3 hover:scale-105 transition duration-300 cursor-pointer">
+              <img src={PerpusPutri1} alt="Perpustakaan Putri 1" className="w-full h-full object-cover" />
+            </div>
+            <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-xl border-4 border-white transform rotate-0 hover:rotate-3 hover:scale-105 transition duration-300 cursor-pointer">
+              <img src={PerpusPutri2} alt="Perpustakaan Putri 2" className="w-full h-full object-cover" />
+            </div>
+            <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-xl border-4 border-white transform rotate-0 hover:-rotate-2 hover:scale-105 transition duration-300 cursor-pointer">
+              <img src={PerpusPutri3} alt="Perpustakaan Putri 3" className="w-full h-full object-cover" />
+            </div>
+            <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-xl border-4 border-white transform rotate-0 hover:rotate-2 hover:scale-105 transition duration-300 cursor-pointer">
+              <img src={PerpusPutri4} alt="Perpustakaan Putri 4" className="w-full h-full object-cover" />
             </div>
           </div>
         </div>
