@@ -7,9 +7,9 @@ import { Icons } from "../constants/icons";
 const SettingsModal = ({ onClose }: { onClose: () => void }) => {
   const { user } = useAuth(); 
   const modalRef = useRef<HTMLDivElement>(null);
-  const [activeSection, setActiveSection] = useState<"profile" | "security" | "admin" | "backup">("profile");
-  const [showPass, setShowPass] = useState(false);
-  const [adminList, setAdminList] = useState([]);
+  const [activeSection, setActiveSection] = useState<"profile" | "security" | "backup">("profile");
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [lastBackup, setLastBackup] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -34,27 +34,15 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
     if (user) {
       setFormData((prev) => ({
         ...prev,
-        name: user.name || "",
+        name: user.name || user.nama || user.nama_lengkap || "",
         username: user.username || "",
         email: user.email || "",
       }));
     }
   }, [user]);
 
-  const fetchAdmins = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/admins`, config);
-      setAdminList(Array.isArray(res.data) ? res.data : []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   useEffect(() => {
     const fetchData = async () => {
-      if (activeSection === "admin") {
-        fetchAdmins();
-      }
       if (activeSection === "backup") {
         try {
           const res = await axios.get(`${API_BASE}/backup-info`, config);
@@ -77,7 +65,7 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
   // Fungsi simpan perubahan (Profil & Security)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    loading(true);
     try {
       if (activeSection === "profile") {
         await axios.put(`${API_BASE}/profile`, {
@@ -106,25 +94,12 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
     }
   };
 
-  // Fungsi Hapus Akun Admin
-  const handleDeleteAdmin = async (id: number, adminName: string) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus akun admin: ${adminName}?`)) {
-      try {
-        await axios.delete(`${API_BASE}/admins/${id}`, config);
-        alert("Admin berhasil dihapus");
-        fetchAdmins(); // Muat ulang list admin setelah di-delete
-      } catch (err: any) {
-        alert(err.response?.data?.error || "Gagal menghapus admin");
-      }
-    }
-  };
-
   // Jalankan backup manual
   const handleBackup = async () => {
     try {
       const res = await axios.post(`${API_BASE}/backup`, {}, config);
       setLastBackup(new Date(res.data.time).toLocaleString("id-ID"));
-      alert("Backup basis data berhasil disimulasikan!");
+      alert("Backup database berhasil disimulasikan!");
     } catch (err) {
       alert("Gagal mencadangkan database");
     }
@@ -154,12 +129,11 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
           <div className="flex flex-col gap-2">
             <Menu icon={<Icons.Profile />} text="Profil" id="profile" active={activeSection} set={setActiveSection} color={DASHBOARD_BLUE}/>
             <Menu icon={<Icons.Security />} text="Keamanan" id="security" active={activeSection} set={setActiveSection} color={DASHBOARD_BLUE}/>
-            <Menu icon={<Icons.Users />} text="Info Admin" id="admin" active={activeSection} set={setActiveSection} color={DASHBOARD_BLUE}/>
             <Menu icon={<Icons.Backup />} text="Backup" id="backup" active={activeSection} set={setActiveSection} color={DASHBOARD_BLUE}/>
           </div>
 
           <button onClick={onClose} className="mt-auto text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-all">
-            ESC untuk tutup
+            Close Page
           </button>
         </div>
 
@@ -173,7 +147,7 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
                 <p className="text-white/60 text-xs font-bold uppercase tracking-widest mt-0.5">Sistem Manajemen Perpustakaan</p>
               </div>
               <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-white font-black text-lg">
-                {formData.name?.charAt(0).toUpperCase() || "A"}
+                {(formData.name || formData.username)?.charAt(0).toUpperCase() || "A"}
               </div>
             </div>
           </div>
@@ -193,37 +167,18 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
                   {activeSection === "security" && (
                     <>
                       <Input label="Password Lama" type="password" value={formData.oldPassword} onChange={(v: string) => handleInputChange("oldPassword", v)} color={DASHBOARD_BLUE}/>
-                      <PasswordInput label="Password Baru" value={formData.newPassword} onChange={(v: string) => handleInputChange("newPassword", v)} show={showPass} toggle={() => setShowPass(!showPass)} color={DASHBOARD_BLUE}/>
-                      <PasswordInput label="Konfirmasi Password" value={formData.confirmPassword} onChange={(v: string) => handleInputChange("confirmPassword", v)} show={showPass} toggle={() => setShowPass(!showPass)} color={DASHBOARD_BLUE}/>
+                      <PasswordInput label="Password Baru" value={formData.newPassword} onChange={(v: string) => handleInputChange("newPassword", v)} show={showNewPass} toggle={() => setShowNewPass(!showNewPass)} color={DASHBOARD_BLUE}/>
+                      <PasswordInput label="Konfirmasi Password" value={formData.confirmPassword} onChange={(v: string) => handleInputChange("confirmPassword", v)} show={showConfirmPass} toggle={() => setShowConfirmPass(!showConfirmPass)} color={DASHBOARD_BLUE}/>
+                      
+                      {/* Box Info Notifikasi Email */}
+                      <div className="flex gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100 text-[11px] leading-relaxed text-slate-500 font-medium mt-1">
+                        <span className="text-sm select-none">🔒</span>
+                        <span><b>Catatan Keamanan:</b> Demi menjaga privasi akun, setiap riwayat perubahan kata sandi akan otomatis diinformasikan ke alamat email terdaftar Anda.</span>
+                      </div>
                     </>
                   )}
                   <SaveButton color={DASHBOARD_BLUE} loading={loading}/>
                 </form>
-              )}
-
-              {activeSection === "admin" && (
-                 <div className="grid gap-3 max-h-[260px] overflow-y-auto pr-1">
-                    {adminList.map((a: any) => (
-                      <div key={a.id} className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between gap-4">
-                         <div className="flex items-center gap-4">
-                           <div className="w-10 h-10 rounded-full bg-[#3b5998] text-white flex items-center justify-center font-bold text-xs">
-                             {a.name?.charAt(0).toUpperCase() || "A"}
-                           </div>
-                           <div>
-                            <p className="font-bold text-slate-800 text-sm">{a.name || "Tidak Ada Nama"}</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{a.username}</p>
-                           </div>
-                         </div>
-                         {/* Button Hapus Admin Akun */}
-                         <button 
-                           onClick={() => handleDeleteAdmin(a.id, a.name || a.username)}
-                           className="px-3 py-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 font-bold text-[10px] uppercase tracking-wider transition-all"
-                         >
-                           Hapus
-                         </button>
-                      </div>
-                    ))}
-                 </div>
               )}
 
               {activeSection === "backup" && (
@@ -299,7 +254,7 @@ const SaveButton = ({ color, loading }: { color: string; loading: boolean }) => 
 );
 
 const title = (s: string) => {
-  const titles: any = { profile: "Profil Admin", security: "Keamanan Akun", admin: "Database Admin", backup: "Backup Sistem" };
+  const titles: any = { profile: "Profil Admin", security: "Keamanan Akun", backup: "Backup Sistem" };
   return titles[s] || "";
 };
 

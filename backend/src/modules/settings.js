@@ -3,11 +3,87 @@ const router = express.Router();
 const db = require('../db');
 const authenticateToken = require('../authMiddleware');
 const bcrypt = require('bcrypt');
-// const nodemailer = require('nodemailer'); // Install ini jika ingin kirim email sungguhan via SMTP
+const { sendPasswordChangedEmail } = require('../utils/mailer');
+
 
 /**
  * @swagger
- * /api/settings/profile:
+ * swagger: "2.0"
+ * info:
+ *   title: API Settings
+ *   version: 1.0.0
+ *   description: API untuk pengaturan profil admin, manajemen admin, dan backup
+ * basePath: /api/settings
+ * components:
+ *   securityDefinitions:
+ *     bearerAuth:
+ *       type: apiKey
+ *       in: header
+ *       name: Authorization
+ *   schemas:
+ *     ProfileUpdateRequest:
+ *       type: object
+ *       required:
+ *         - name
+ *         - username
+ *         - email
+ *       properties:
+ *         name:
+ *           type: string
+ *           example: "Admin Utama"
+ *         username:
+ *           type: string
+ *           example: "admin_super"
+ *         email:
+ *           type: string
+ *           format: email
+ *           example: "admin@example.com"
+ *     ChangePasswordRequest:
+ *       type: object
+ *       required:
+ *         - oldPassword
+ *         - newPassword
+ *       properties:
+ *         oldPassword:
+ *           type: string
+ *           format: password
+ *           example: "passwordlama123"
+ *         newPassword:
+ *           type: string
+ *           format: password
+ *           example: "passwordbaru456"
+ *     AdminResponse:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *         name:
+ *           type: string
+ *         username:
+ *           type: string
+ *         email:
+ *           type: string
+ *     BackupResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *         time:
+ *           type: string
+ *           format: date-time
+ *     BackupInfoResponse:
+ *       type: object
+ *       properties:
+ *         last_backup:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ */
+
+
+/**
+ * @swagger
+ * /profile:
  *   put:
  *     summary: Memperbarui data profil admin yang sedang login
  *     tags: [Settings]
@@ -18,22 +94,7 @@ const bcrypt = require('bcrypt');
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - name
- *               - username
- *               - email
- *             properties:
- *               name:
- *                 type: string
- *                 example: "Admin Utama"
- *               username:
- *                 type: string
- *                 example: "admin_super"
- *               email:
- *                 type: string
- *                 format: email
- *                 example: "admin@example.com"
+ *             $ref: '#/components/schemas/ProfileUpdateRequest'
  *     responses:
  *       200:
  *         description: Profil berhasil diperbarui
@@ -54,7 +115,7 @@ const bcrypt = require('bcrypt');
 router.put('/profile', authenticateToken, async (req, res) => {
     try {
         const { name, username, email } = req.body;
-        const adminId = req.user.id; // Diambil dari payload token JWT
+        const adminId = req.user.id;
 
         if (!name || !username || !email) {
             return res.status(400).json({ error: 'Semua field profil wajib diisi' });
@@ -64,15 +125,19 @@ router.put('/profile', authenticateToken, async (req, res) => {
             .where({ id: adminId })
             .update({ name, username, email });
 
-        res.json({ message: 'Profil berhasil diperbarui', user: { id: adminId, name, username, email } });
+        res.json({ 
+            message: 'Profil berhasil diperbarui', 
+            user: { id: adminId, name, username, email } 
+        });
     } catch (error) {
         res.status(500).json({ error: 'Gagal memperbarui profil', detail: error.message });
     }
 });
 
+
 /**
  * @swagger
- * /api/settings/admins:
+ * /admins:
  *   get:
  *     summary: Mendapatkan semua daftar administrator
  *     tags: [Settings]
@@ -86,16 +151,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
- *                   name:
- *                     type: string
- *                   username:
- *                     type: string
- *                   email:
- *                     type: string
+ *                 $ref: '#/components/schemas/AdminResponse'
  *       500:
  *         description: Gagal mengambil data admin
  */
@@ -108,11 +164,12 @@ router.get('/admins', authenticateToken, async (req, res) => {
     }
 });
 
+
 /**
  * @swagger
- * /api/settings/admins/{id}:
+ * /admins/{id}:
  *   delete:
- *     summary: Menghapus akun admin tertentu (Button Hapus Akun)
+ *     summary: Menghapus akun admin tertentu
  *     tags: [Settings]
  *     security:
  *       - bearerAuth: []
@@ -135,7 +192,6 @@ router.delete('/admins/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         
-        // Mencegah admin menghapus dirinya sendiri secara tidak sengaja melalui list
         if (parseInt(id) === req.user.id) {
             return res.status(400).json({ error: 'Anda tidak dapat menghapus akun Anda sendiri dari daftar ini.' });
         }
@@ -147,9 +203,10 @@ router.delete('/admins/:id', authenticateToken, async (req, res) => {
     }
 });
 
+
 /**
  * @swagger
- * /api/settings/change-password-request:
+ * /change-password-request:
  *   post:
  *     summary: Memperbarui kata sandi admin
  *     tags: [Settings]
@@ -160,29 +217,10 @@ router.delete('/admins/:id', authenticateToken, async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - oldPassword
- *               - newPassword
- *             properties:
- *               oldPassword:
- *                 type: string
- *                 format: password
- *                 example: "passwordlama123"
- *               newPassword:
- *                 type: string
- *                 format: password
- *                 example: "passwordbaru456"
+ *             $ref: '#/components/schemas/ChangePasswordRequest'
  *     responses:
  *       200:
  *         description: Password berhasil diperbarui
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
  *       400:
  *         description: Password lama salah
  *       500:
@@ -193,29 +231,41 @@ router.post('/change-password-request', authenticateToken, async (req, res) => {
         const { oldPassword, newPassword } = req.body;
         const adminId = req.user.id;
 
+        if (!oldPassword || !newPassword) {
+            return res.status(400).json({ error: 'Password lama dan baru wajib diisi' });
+        }
+
         const admin = await db('admins').where({ id: adminId }).first();
-        if (!admin) return res.status(404).json({ error: 'Admin tidak ditemukan' });
+        if (!admin) {
+            return res.status(404).json({ error: 'Admin tidak ditemukan' });
+        }
 
-        // Cek password lama
         const match = await bcrypt.compare(oldPassword, admin.password);
-        if (!match) return res.status(400).json({ error: 'Password lama salah' });
+        if (!match) {
+            return res.status(400).json({ error: 'Password lama salah' });
+        }
 
-        // LOGIKA EMAIL SIMULASI (Bisa dikembangkan dengan nodemailer)
-        console.log(`Kirim email konfirmasi ke: ${admin.email}`);
-        
-        // Eksekusi update password langsung (atau simpan token verifikasi email terlebih dahulu)
         const hashedNewPassword = await bcrypt.hash(newPassword, 10);
         await db('admins').where({ id: adminId }).update({ password: hashedNewPassword });
 
-        res.json({ message: `Konfirmasi berhasil dikirim ke email ${admin.email}. Password Anda telah aman diperbarui.` });
+        try {
+            await sendPasswordChangedEmail(admin.email, admin.username);
+        } catch (emailError) {
+            console.error('Sistem gagal mengirimkan email notifikasi:', emailError.message);
+        }
+
+        res.json({ 
+            message: `Password Anda telah aman diperbarui. Notifikasi konfirmasi berhasil dikirim ke email ${admin.email}.` 
+        });
     } catch (error) {
         res.status(500).json({ error: 'Gagal memproses perubahan password', detail: error.message });
     }
 });
 
+
 /**
  * @swagger
- * /api/settings/backup:
+ * /backup:
  *   post:
  *     summary: Menjalankan simulasi backup dan mencatat waktu terakhir
  *     tags: [Settings]
@@ -227,29 +277,28 @@ router.post('/change-password-request', authenticateToken, async (req, res) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 time:
- *                   type: string
- *                   format: date-time
+ *               $ref: '#/components/schemas/BackupResponse'
  *       500:
  *         description: Proses backup gagal
  */
 router.post('/backup', authenticateToken, async (req, res) => {
     try {
         const now = new Date();
-        await db('settings').insert({ id: 1, last_backup_at: now }).onConflict('id').merge();
+        await db('settings')
+            .insert({ id: 1, last_backup_at: now })
+            .onConflict('id')
+            .merge();
+            
         res.json({ message: "Backup berhasil", time: now });
     } catch (error) {
         res.status(500).json({ error: 'Proses backup gagal' });
     }
 });
 
+
 /**
  * @swagger
- * /api/settings/backup-info:
+ * /backup-info:
  *   get:
  *     summary: Ambil info backup terakhir
  *     tags: [Settings]
@@ -261,12 +310,7 @@ router.post('/backup', authenticateToken, async (req, res) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 last_backup:
- *                   type: string
- *                   format: date-time
- *                   nullable: true
+ *               $ref: '#/components/schemas/BackupInfoResponse'
  *       500:
  *         description: Gagal mengambil info backup
  */
@@ -278,5 +322,6 @@ router.get('/backup-info', authenticateToken, async (req, res) => {
         res.status(500).json({ last_backup: null });
     }
 });
+
 
 module.exports = router;

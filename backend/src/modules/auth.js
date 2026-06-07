@@ -4,13 +4,84 @@ const db = require('../db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const authenticateToken = require('../authMiddleware');
-
 const { sendResetPasswordEmail } = require('../utils/mailer.js');
 
 
 /**
  * @swagger
- * /api/auth/login:
+ * swagger: "2.0"
+ * info:
+ *   title: API Authentication
+ *   version: 1.0.0
+ *   description: API untuk login, register, dan manajemen admin
+ * basePath: /api/auth
+ * components:
+ *   securityDefinitions:
+ *     bearerAuth:
+ *       type: apiKey
+ *       in: header
+ *       name: Authorization
+ *   schemas:
+ *     LoginRequest:
+ *       type: object
+ *       required:
+ *         - username
+ *         - password
+ *       properties:
+ *         username:
+ *           type: string
+ *         password:
+ *           type: string
+ *     RegisterRequest:
+ *       type: object
+ *       required:
+ *         - name
+ *         - username
+ *         - password
+ *         - email
+ *       properties:
+ *         name:
+ *           type: string
+ *         username:
+ *           type: string
+ *         password:
+ *           type: string
+ *         email:
+ *           type: string
+ *     ForgotPasswordRequest:
+ *       type: object
+ *       required:
+ *         - email
+ *       properties:
+ *         email:
+ *           type: string
+ *     ResetPasswordRequest:
+ *       type: object
+ *       required:
+ *         - token
+ *         - newPassword
+ *       properties:
+ *         token:
+ *           type: string
+ *         newPassword:
+ *           type: string
+ *     UpdateAdminRequest:
+ *       type: object
+ *       properties:
+ *         name:
+ *           type: string
+ *         username:
+ *           type: string
+ *         email:
+ *           type: string
+ *         password:
+ *           type: string
+ */
+
+
+/**
+ * @swagger
+ * /login:
  *   post:
  *     summary: Login admin (Dapatkan Token JWT)
  *     tags: [Auth]
@@ -20,17 +91,23 @@ const { sendResetPasswordEmail } = require('../utils/mailer.js');
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               username: { type: string }
- *               password: { type: string }
+ *             $ref: '#/components/schemas/LoginRequest'
  *     responses:
  *       200:
  *         description: Login berhasil, mengembalikan token JWT
+ *       401:
+ *         description: Password salah
+ *       404:
+ *         description: Username tidak ditemukan
  */
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({ message: 'Username dan password wajib diisi' });
+        }
+
         const user = await db('admins').where({ username }).first();
 
         if (!user) {
@@ -44,20 +121,30 @@ router.post('/login', async (req, res) => {
 
         // Buat JWT Token
         const token = jwt.sign(
-            { id: user.id, username: user.username },
+            { id: user.id, name: user.name, username: user.username },
             process.env.JWT_SECRET || 'supersecretjwtkey',
             { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
         );
 
-        res.json({ message: 'Login berhasil', token, user: { id: user.id, username: user.username, email: user.email } });
+        res.json({ 
+            message: 'Login berhasil', 
+            token, 
+            user: { 
+                id: user.id, 
+                name: user.name, 
+                username: user.username, 
+                email: user.email 
+            } 
+        });
     } catch (error) {
         res.status(500).json({ error: 'Login gagal', detail: error.message });
     }
 });
 
+
 /**
  * @swagger
- * /api/auth/register:
+ * /register:
  *   post:
  *     summary: Registrasi admin baru
  *     tags: [Auth]
@@ -67,20 +154,28 @@ router.post('/login', async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name: { type: string }
- *               username: { type: string }
- *               password: { type: string }
- *               email: { type: string }
+ *             $ref: '#/components/schemas/RegisterRequest'
  *     responses:
  *       201:
  *         description: Berhasil registrasi
+ *       400:
+ *         description: Username sudah terdaftar
  */
 router.post('/register', async (req, res) => {
     try {
         const { name, username, password, email } = req.body;
+
+        if (!name || !username || !password || !email) {
+            return res.status(400).json({ message: 'Semua field wajib diisi' });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Cek apakah username sudah ada
+        const existingUser = await db('admins').where({ username }).first();
+        if (existingUser) {
+            return res.status(400).json({ message: 'Username sudah digunakan' });
+        }
 
         await db('admins').insert({
             name,
@@ -95,9 +190,10 @@ router.post('/register', async (req, res) => {
     }
 });
 
+
 /**
  * @swagger
- * /api/auth/forgot-password:
+ * /forgot-password:
  *   post:
  *     summary: Mengirim email reset password
  *     tags: [Auth]
@@ -107,9 +203,7 @@ router.post('/register', async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               email: { type: string }
+ *             $ref: '#/components/schemas/ForgotPasswordRequest'
  *     responses:
  *       200:
  *         description: Email berhasil dikirim
@@ -120,24 +214,25 @@ router.post('/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
         
-        // 1. Cek apakah email terdaftar
+        if (!email) {
+            return res.status(400).json({ message: 'Email wajib diisi' });
+        }
+
         const user = await db('admins').where({ email }).first();
 
         if (!user) {
             return res.status(404).json({ message: 'Email tidak terdaftar di sistem kami' });
         }
 
-        // 2. Buat Token unik
+        // Buat token unik
         const resetToken = Math.random().toString(36).substring(2, 15);
 
-        // --- TAMBAHKAN BAGIAN INI ---
-        // Simpan token ke database agar nanti bisa dicek pas reset password
+        // Simpan token ke database
         await db('admins').where({ email }).update({
-            reset_token: resetToken // Pastikan di tabel 'admins' sudah ada kolom reset_token
+            reset_token: resetToken
         });
-        // ----------------------------
 
-        // 3. Kirim Email
+        // Kirim email
         await sendResetPasswordEmail(email, resetToken);
 
         res.json({ message: 'Link reset password telah dikirim ke email Anda!' });
@@ -146,9 +241,10 @@ router.post('/forgot-password', async (req, res) => {
     }
 });
 
+
 /**
  * @swagger
- * /api/auth/reset-password:
+ * /reset-password:
  *   post:
  *     summary: Reset password menggunakan token
  *     tags: [Auth]
@@ -158,29 +254,29 @@ router.post('/forgot-password', async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               token: { type: string }
- *               newPassword: { type: string }
+ *             $ref: '#/components/schemas/ResetPasswordRequest'
  *     responses:
  *       200:
  *         description: Password berhasil diubah
+ *       400:
+ *         description: Token tidak valid
  */
 router.post('/reset-password', async (req, res) => {
     try {
         const { token, newPassword } = req.body;
 
-        // 1. Cari admin yang memiliki token tersebut
+        if (!token || !newPassword) {
+            return res.status(400).json({ message: 'Token dan password baru wajib diisi' });
+        }
+
         const user = await db('admins').where({ reset_token: token }).first();
 
         if (!user) {
             return res.status(400).json({ message: 'Token tidak valid atau sudah kadaluarsa' });
         }
 
-        // 2. Hash password baru
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        // 3. Update database dan hapus tokennya
         await db('admins').where({ id: user.id }).update({
             password: hashedPassword,
             reset_token: null 
@@ -192,19 +288,19 @@ router.post('/reset-password', async (req, res) => {
     }
 });
 
+
 /**
  * @swagger
- * /api/auth/admins:
+ * /admins:
  *   get:
  *     summary: Mendapatkan daftar semua admin
- *     tags: [Auth]
+ *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Berhasil mendapatkan data admin
  */
-// Get List Semua Admin
 router.get('/admins', authenticateToken, async (req, res) => {
     try {
         const admins = await db('admins').select('id', 'name', 'username', 'email');
@@ -214,12 +310,13 @@ router.get('/admins', authenticateToken, async (req, res) => {
     }
 });
 
+
 /**
  * @swagger
- * /api/auth/admins/{id}:
+ * /admins/{id}:
  *   put:
  *     summary: Memperbarui data admin
- *     tags: [Auth]
+ *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -228,21 +325,19 @@ router.get('/admins', authenticateToken, async (req, res) => {
  *         required: true
  *         schema:
  *           type: integer
+ *         description: ID admin yang akan diperbarui
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               username: { type: string }
- *               email: { type: string }
- *               password: { type: string }
+ *             $ref: '#/components/schemas/UpdateAdminRequest'
  *     responses:
  *       200:
  *         description: Profil admin berhasil diperbarui
+ *       404:
+ *         description: Admin tidak ditemukan
  */
-// Update data Admin
 router.put('/admins/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
@@ -256,11 +351,18 @@ router.put('/admins/:id', authenticateToken, async (req, res) => {
             updateData.password = await bcrypt.hash(password, 10);
         }
 
+        // Cek apakah admin ada
+        const existingAdmin = await db('admins').where({ id }).first();
+        if (!existingAdmin) {
+            return res.status(404).json({ message: 'Admin tidak ditemukan' });
+        }
+
         await db('admins').where({ id }).update(updateData);
         res.json({ message: 'Profil admin berhasil diperbarui' });
     } catch (error) {
         res.status(500).json({ error: 'Gagal memperbarui admin', detail: error.message });
     }
 });
+
 
 module.exports = router;
