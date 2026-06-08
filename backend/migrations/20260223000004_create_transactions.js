@@ -1,6 +1,7 @@
 exports.up = function (knex) {
     return knex.schema.createTable('transactions', table => {
         table.increments('id').primary();
+        table.string('memberId').notNullable(); // <--- Ditambahkan di sini sebagai pengunci ID unik
         table.integer('bookId').unsigned().references('id').inTable('books').onDelete('CASCADE');
         table.string('studentName').notNullable();
         table.string('role').notNullable().defaultTo('siswa');

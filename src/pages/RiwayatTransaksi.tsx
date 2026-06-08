@@ -13,6 +13,7 @@ interface Transaction {
     dueDate: string;
     status: string;
     quantity: number;
+    memberId?: string; // Tambahkan properti ke interface tipe data
 }
 
 const Riwayat: React.FC = () => {
@@ -43,7 +44,6 @@ const Riwayat: React.FC = () => {
         setSelected(p => p.includes(id) ? p.filter(i => i !== id) : [...p, id]);
     };
 
-    // Fungsi Select All yang disesuaikan dengan data yang sudah di-filter/sort (sorted)
     const toggleAll = (currentData: Transaction[]) => {
         if (selected.length === currentData.length && currentData.length > 0) {
             setSelected([]);
@@ -52,7 +52,6 @@ const Riwayat: React.FC = () => {
         }
     };
 
-    // FUNGSI BARU: Untuk mengeksekusi penghapusan data ke API
     const deleteSelected = async () => {
         const confirmDelete = window.confirm(`Apakah Anda yakin ingin menghapus ${selected.length} data ini?`);
         if (!confirmDelete) return;
@@ -63,7 +62,7 @@ const Riwayat: React.FC = () => {
             }
             setSelected([]);
             setSelectMode(false);
-            fetchTransactions(); // Refresh data tabel setelah berhasil dihapus
+            fetchTransactions(); 
             alert("Data berhasil dihapus!");
         } catch (error) {
             console.error("Gagal menghapus data:", error);
@@ -76,16 +75,13 @@ const Riwayat: React.FC = () => {
             !q ||
             t.bookTitle?.toLowerCase().includes(q) ||
             t.studentName?.toLowerCase().includes(q) ||
+            t.memberId?.toLowerCase().includes(q) || // Tambahan filter ID Anggota
             t.role?.toLowerCase().includes(q)
         )
         .sort((a, b) => sort === "asc" ? Number(a.id) - Number(b.id) : Number(b.id) - Number(a.id))
         .slice(0, limit);
 
     return (
-        /* KUNCI UTAMA: 
-           1. w-full dan max-w-full agar tidak melebar melebihi sidebar.
-           2. overflow-hidden untuk mematikan scroll browser utama.
-        */
         <div className="p-8 h-screen w-full max-w-full flex flex-col overflow-hidden bg-slate-50">
 
             {/* HEADER SECTION */}
@@ -109,16 +105,11 @@ const Riwayat: React.FC = () => {
                 />
             </div>
 
-            {/* AREA TABEL: flex-1 min-h-0 agar dia mengisi sisa ruang vertikal tanpa 'meledak' */}
+            {/* AREA TABEL */}
             <div className="flex-1 min-h-0 w-full relative">
                 <TableBox>
-                    {/* KUNCI GULIR: 
-                       - overflow-x-auto: scroll samping hanya di sini.
-                       - overflow-y-auto: scroll bawah hanya di sini.
-                       - absolute inset-0: memaksa div ini menempati area TableBox secara penuh.
-                    */}
                     <div className="absolute inset-0 overflow-auto border border-slate-200 rounded-3xl bg-white shadow-sm">
-                        <table className="w-full text-sm text-left border-collapse" style={{ minWidth: "1000px" }}>
+                        <table className="w-full text-sm text-left border-collapse" style={{ minWidth: "1100px" }}>
                             <thead className="sticky top-0 z-30 bg-slate-100 text-slate-600 text-xs uppercase">
                                 <tr>
                                     {selectMode && (
@@ -131,6 +122,7 @@ const Riwayat: React.FC = () => {
                                         </th>
                                     )}
                                     <th className="px-6 py-5 bg-slate-100 border-b w-12">No</th>
+                                    <th className="px-6 py-5 bg-slate-100 border-b whitespace-nowrap">ID Anggota</th> {/* Tambah Header ID Anggota */}
                                     <th className="px-6 py-5 bg-slate-100 border-b whitespace-nowrap">Judul Buku</th>
                                     <th className="px-6 py-5 bg-slate-100 border-b whitespace-nowrap">Nama Peminjam</th>
                                     <th className="px-6 py-5 bg-slate-100 border-b">Role</th>
@@ -145,7 +137,7 @@ const Riwayat: React.FC = () => {
                             <tbody className="divide-y divide-slate-100">
                                 {sorted.length === 0 ? (
                                     <tr>
-                                        <td colSpan={selectMode ? 11 : 10} className="py-20 text-center text-slate-400">Data Kosong</td>
+                                        <td colSpan={selectMode ? 12 : 11} className="py-20 text-center text-slate-400">Data Kosong</td> {/* colSpan dinaikkan karena kolom bertambah */}
                                     </tr>
                                 ) : (
                                     sorted.map((item, i) => {
@@ -166,6 +158,7 @@ const Riwayat: React.FC = () => {
                                                     </td>
                                                 )}
                                                 <td className="px-6 py-4 text-slate-400 font-bold">{i + 1}</td>
+                                                <td className="px-6 py-4 font-mono font-bold text-slate-800">{item.memberId || "-"}</td> {/* Cetak ID Anggota */}
                                                 <td className="px-6 py-4 font-semibold text-slate-700 whitespace-nowrap">{item.bookTitle}</td>
                                                 <td className="px-6 py-4 text-slate-600 whitespace-nowrap">{item.studentName}</td>
                                                 <td className="px-6 py-4 text-slate-500">{item.role}</td>

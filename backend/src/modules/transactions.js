@@ -3,36 +3,131 @@ const router = express.Router();
 const db = require('../db');
 const authenticateToken = require('../authMiddleware');
 
+
 /**
  * @swagger
- * /api/transactions:
+ * swagger: "2.0"
+ * info:
+ *   title: API Transactions
+ *   version: 1.0.0
+ *   description: API untuk manajemen transaksi peminjaman dan pengembalian buku
+ * basePath: /api/transactions
+ * components:
+ *   securityDefinitions:
+ *     bearerAuth:
+ *       type: apiKey
+ *       in: header
+ *       name: Authorization
+ *   schemas:
+ *     Transaction:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *         memberId:
+ *           type: string
+ *         bookId:
+ *           type: integer
+ *         studentName:
+ *           type: string
+ *         role:
+ *           type: string
+ *         class:
+ *           type: string
+ *         major:
+ *           type: string
+ *         gender:
+ *           type: string
+ *         quantity:
+ *           type: integer
+ *         status:
+ *           type: string
+ *         borrowDate:
+ *           type: string
+ *           format: date
+ *         dueDate:
+ *           type: string
+ *           format: date
+ *     CreateTransactionRequest:
+ *       type: object
+ *       required:
+ *         - memberId
+ *         - bookId
+ *         - studentName
+ *         - status
+ *         - borrowDate
+ *         - dueDate
+ *       properties:
+ *         memberId:
+ *           type: string
+ *         bookId:
+ *           type: integer
+ *         studentName:
+ *           type: string
+ *         role:
+ *           type: string
+ *         class:
+ *           type: string
+ *         major:
+ *           type: string
+ *         gender:
+ *           type: string
+ *         status:
+ *           type: string
+ *         borrowDate:
+ *           type: string
+ *           format: date
+ *         dueDate:
+ *           type: string
+ *           format: date
+ *         quantity:
+ *           type: integer
+ *           default: 1
+ *     UpdateTransactionRequest:
+ *       type: object
+ *       properties:
+ *         status:
+ *           type: string
+ *         dueDate:
+ *           type: string
+ *           format: date
+ */
+
+
+/**
+ * @swagger
+ * /:
  *   get:
- *     summary: Mendapatkan semua transaksi
+ *     summary: Mengambil semua data riwayat transaksi peminjaman
  *     tags: [Transactions]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Berhasil mendapatkan daftar transaksi
+ *         description: Berhasil mengambil semua list transaksi
+ *       500:
+ *         description: Eror internal pada server
  */
-// Get semua transaksi
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const transactions = await db('transactions')
-            .select('transactions.*', 'books.title as bookTitle')
-            .leftJoin('books', 'transactions.bookId', 'books.id')
-            .orderBy('transactions.id', 'desc');
-        res.json(transactions);
+        const data = await db('transactions')
+            .join('books', 'transactions.bookId', '=', 'books.id')
+            .select(
+                'transactions.*',
+                'books.title as bookTitle'
+            );
+        res.status(200).json(data);
     } catch (error) {
-        res.status(500).json({ error: 'Gagal mendapatkan data transaksi', detail: error.message });
+        res.status(500).json({ error: 'Gagal mengambil data transaksi', detail: error.message });
     }
 });
 
+
 /**
  * @swagger
- * /api/transactions:
+ * /:
  *   post:
- *     summary: Menambah transaksi peminjaman baru
+ *     summary: Membuat transaksi peminjaman buku baru
  *     tags: [Transactions]
  *     security:
  *       - bearerAuth: []
@@ -41,58 +136,70 @@ router.get('/', authenticateToken, async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               bookId: { type: integer }
- *               studentName: { type: string }
- *               role: { type: string }
- *               class: { type: string }
- *               major: { type: string }
- *               gender: { type: string }
- *               quantity: { type: integer }
- *               status: { type: string }
- *               borrowDate: { type: string, format: date-time }
- *               dueDate: { type: string, format: date-time }
+ *             $ref: '#/components/schemas/CreateTransactionRequest'
  *     responses:
  *       201:
  *         description: Transaksi berhasil dicatat
+ *       400:
+ *         description: Data input tidak lengkap atau stok tidak mencukupi
+ *       500:
+ *         description: Eror internal pada server
  */
-// Tambah transaksi peminjaman baru
 router.post('/', authenticateToken, async (req, res) => {
     try {
-        const { bookId, studentName, role, class: kelas, major, gender, status, borrowDate, dueDate, quantity = 1 } = req.body;
+        const { 
+            memberId, 
+            bookId, 
+            studentName, 
+            role, 
+            class: kelas, 
+            major, 
+            gender, 
+            status, 
+            borrowDate, 
+            dueDate, 
+            quantity = 1 
+        } = req.body;
 
-        // Cek stok buku
+        if (!memberId || !bookId || !studentName || !status || !borrowDate || !dueDate) {
+            return res.status(400).json({ error: 'Data input tidak lengkap' });
+        }
+
         const book = await db('books').where({ id: bookId }).first();
-        if (!book) {
-            return res.status(404).json({ error: 'Buku tidak ditemukan' });
-        }
-        if (book.stock < quantity) {
-            return res.status(400).json({ error: `Jumlah pinjam melebihi stok yang tersedia (${book.stock} tersedia)` });
+        if (!book || book.stock < quantity) {
+            return res.status(400).json({ error: 'Stok buku tidak mencukupi' });
         }
 
-        const [id] = await db('transactions').insert({ bookId, studentName, role, class: kelas, major, gender, status, borrowDate, dueDate, quantity });
-
-        // Update status buku menjadi tidak tersedia bila dipinjam dan stok menyusut
-        if (status === 'Dipinjam') {
-            const newStock = book.stock - quantity;
-            await db('books').where({ id: bookId }).update({
-                stock: newStock,
-                available: newStock > 0
+        await db.transaction(async (trx) => {
+            await trx('transactions').insert({
+                memberId,
+                bookId,
+                studentName,
+                role,
+                class: kelas,
+                major,
+                gender,
+                quantity,
+                status,
+                borrowDate,
+                dueDate
             });
-        }
 
-        res.status(201).json({ message: 'Transaksi berhasil dicatat', id });
+            await trx('books').where({ id: bookId }).decrement('stock', quantity);
+        });
+
+        res.status(201).json({ message: 'Transaksi berhasil dicatat' });
     } catch (error) {
-        res.status(500).json({ error: 'Gagal mencatat transaksi', detail: error.message });
+        res.status(500).json({ error: 'Gagal memproses transaksi', detail: error.message });
     }
 });
 
+
 /**
  * @swagger
- * /api/transactions/{id}:
+ * /{id}:
  *   put:
- *     summary: Memperbarui status transaksi (misal pengembalian)
+ *     summary: Mengembalikan buku atau memperpanjang durasi peminjaman
  *     tags: [Transactions]
  *     security:
  *       - bearerAuth: []
@@ -102,80 +209,64 @@ router.post('/', authenticateToken, async (req, res) => {
  *         required: true
  *         schema:
  *           type: integer
+ *         description: ID Transaksi
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               status: { type: string }
- *               dueDate: { type: string, format: date-time }
+ *             $ref: '#/components/schemas/UpdateTransactionRequest'
  *     responses:
  *       200:
- *         description: Status transaksi berhasil diperbarui
+ *         description:操作 berhasil
+ *       400:
+ *         description: Request tidak valid
+ *       404:
+ *         description: Transaksi tidak ditemukan
+ *       500:
+ *         description: Eror internal pada server
  */
-// Update status transaksi (misal: pengembalian)
 router.put('/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { status, dueDate } = req.body;
+
     try {
-        const { id } = req.params;
-        const { status, dueDate } = req.body;
-
-        // Ambil data transaksi lama buat ngecek id bukunya
-        const trx = await db('transactions').where({ id }).first();
-
-        // Update transaksi
-        const updatePayload = {};
-        if (status) updatePayload.status = status;
-        if (dueDate) updatePayload.dueDate = dueDate;
-
-        await db('transactions').where({ id }).update(updatePayload);
-
-        // Update status buku tersedia lagi bila dikembalikan
-        if (status === 'Dikembalikan' && trx && trx.status !== 'Dikembalikan') {
-            const book = await db('books').where({ id: trx.bookId }).first();
-            if (book) {
-                const newStock = book.stock + trx.quantity;
-                await db('books').where({ id: trx.bookId }).update({
-                    stock: newStock,
-                    available: true
-                });
-            }
+        const transaction = await db('transactions').where({ id }).first();
+        if (!transaction) {
+            return res.status(404).json({ error: 'Transaksi tidak ditemukan di database' });
         }
 
-        res.json({ message: 'Status transaksi berhasil diperbarui' });
+        // JIKA AKSI ADALAH RETURN (PENGEMBALIAN BUKU)
+        if (status === 'Dikembalikan') {
+            await db.transaction(async (trx) => {
+                await trx('transactions')
+                    .where({ id })
+                    .update({ status: 'Dikembalikan' });
+
+                await trx('books')
+                    .where({ id: transaction.bookId })
+                    .increment('stock', transaction.quantity || 1);
+            });
+
+            return res.status(200).json({ message: 'Buku berhasil dikembalikan dan stok diperbarui' });
+        }
+
+        // JIKA AKSI ADALAH EXTEND (PERPANJANG)
+        if (dueDate) {
+            await db('transactions')
+                .where({ id })
+                .update({ dueDate });
+
+            return res.status(200).json({ message: 'Durasi peminjaman berhasil diperpanjang' });
+        }
+
+        return res.status(400).json({ error: 'Request tidak valid' });
+
     } catch (error) {
-        res.status(500).json({ error: 'Gagal memperbarui transaksi', detail: error.message });
+        console.error("Error backend:", error);
+        res.status(500).json({ error: 'Gagal memperbarui data', detail: error.message });
     }
 });
 
-/**
- * @swagger
- * /api/transactions/{id}:
- *   delete:
- *     summary: Menghapus transaksi
- *     tags: [Transactions]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Transaksi berhasil dihapus
- */
-// Hapus transaksi
-router.delete('/:id', authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-        await db('transactions').where({ id }).del();
-        res.json({ message: 'Transaksi berhasil dihapus' });
-    } catch (error) {
-        res.status(500).json({ error: 'Gagal menghapus transaksi', detail: error.message });
-    }
-});
 
 module.exports = router;

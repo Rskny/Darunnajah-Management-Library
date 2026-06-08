@@ -5,7 +5,7 @@ import apiClient from "../apiClient";
 import { useLocation } from "react-router-dom";
 
 export interface Member {
-    id?: number;
+    id?: string; // 1. DIUBAH MENJADI STRING (Karena nilainya seperti S1001, T1002)
     nama: string;
     status: string;
     kelas: string;
@@ -65,7 +65,11 @@ export default function DataAnggota() {
             m.jurusan.toLowerCase().includes(q) ||
             m.gender.toLowerCase().includes(q)
         )
-        .sort((a: any, b: any) => sort === "asc" ? a.id - b.id : b.id - a.id)
+        // 2. DIUBAH MENGGUNAKAN localeCompare (Karena sorting string S1001 / T1001 tidak bisa pakai pengurangan matematika)
+        .sort((a: any, b: any) => {
+            if (!a.id || !b.id) return 0;
+            return sort === "asc" ? a.id.localeCompare(b.id) : b.id.localeCompare(a.id);
+        })
         .slice(0, limit);
 
     return (
@@ -123,6 +127,8 @@ export default function DataAnggota() {
                             )}
 
                             <th className="p-4 w-14">No</th>
+                            {/* 3. TAMBAH HEADER KOLOM ID DI SINI */}
+                            <th className="p-4 text-left w-24">ID</th>
                             <th className="p-4 text-left">Nama</th>
                             <th className="p-4">status</th>
                             <th className="p-4">Kelas</th>
@@ -137,7 +143,7 @@ export default function DataAnggota() {
                         {sorted.length === 0 ? (
                             <tr>
                                 <td
-                                    colSpan={showSelect ? 7 : 6}
+                                    colSpan={showSelect ? 8 : 7} // 4. COLSPAN DINAIKKAN KARENA ADA KOLOM BARU
                                     className="py-20 text-center text-slate-400 font-medium">
                                     Belum ada data anggota
                                 </td>
@@ -158,12 +164,15 @@ export default function DataAnggota() {
                                     )}
 
                                     <td className="p-4 font-semibold text-slate-500">{i + 1}</td>
+                                    
+                                    {/* 5. TAMBAH DATA ISI ID BARU DI SINI */}
+                                    <td className="p-4 text-left font-bold text-slate-700 tracking-wider">{m.id}</td>
 
                                     <td className="text-left font-medium text-slate-700">
                                         {m.nama}
                                     </td>
 
-                                    <td>{m.status}</td>
+                                    <td className="capitalize">{m.status}</td>
                                     <td>{m.kelas}</td>
                                     <td>{m.jurusan}</td>
                                     <td>{m.gender}</td>

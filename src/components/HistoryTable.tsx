@@ -7,6 +7,7 @@ interface HistoryItem {
   status?: string;
   detail: string;
   jenis: string;
+  memberId?: string; // Ditambahkan untuk menampung ID Anggota
 }
 
 interface Props {
@@ -23,6 +24,7 @@ export default function HistoryTable({ data, onDelete }: Props) {
           <tr>
             <th className="px-4 py-3 text-left">Tanggal</th>
             <th className="px-4 py-3 text-left">Jenis</th>
+            <th className="px-4 py-3 text-left">ID Anggota</th> {/* Tambah Header ID Anggota */}
             <th className="px-4 py-3 text-left">Nama</th>
             <th className="px-4 py-3 text-left">Deskripsi</th>
             <th className="px-4 py-3 text-left">Status</th>
@@ -49,6 +51,11 @@ export default function HistoryTable({ data, onDelete }: Props) {
                 {/* Jenis */}
                 <td className="px-4 py-3 font-medium">
                   {item.jenis}
+                </td>
+
+                {/* ID Anggota */}
+                <td className="px-4 py-3 font-mono font-bold text-slate-700">
+                  {item.memberId || "-"}
                 </td>
 
                 {/* Nama */}

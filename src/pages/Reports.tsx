@@ -10,7 +10,6 @@ const months = [
 
 export default function Reports() {
   const [type, setType] = useState<"transaksi" | "kunjungan">("transaksi");
-  // Mengubah tipe month menjadi string | number agar bisa menampung nilai "all"
   const [month, setMonth] = useState<number | "all">(new Date().getMonth());
   const [year, setYear] = useState(new Date().getFullYear());
   const [reportData, setReportData] = useState<any[]>([]);
@@ -19,7 +18,6 @@ export default function Reports() {
     const fetchReport = async () => {
       try {
         const response = await apiClient.get("/reports", {
-          // Jika month bernilai "all", backend akan tahu bahwa ini request tahunan
           params: { type, month, year }
         });
         setReportData(response.data);
@@ -33,6 +31,7 @@ export default function Reports() {
   const downloadPDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
 
     /* 1. HEADER / KOP SURAT */
     doc.setFillColor(30, 41, 59); 
@@ -56,18 +55,17 @@ export default function Reports() {
     doc.setTextColor(100);
     doc.setFont("helvetica", "normal");
     
-    // Penyesuaian sub-header teks periode waktu PDF
     const periodeTeks = month === "all" ? `Tahun ${year}` : `${months[month as number]} ${year}`;
     doc.text(periodeTeks, pageWidth - 20, 25, { align: "right" });
 
     doc.setDrawColor(226, 232, 240); 
     doc.line(20, 32, pageWidth - 20, 32);
 
-    /* 2. TABLE DENGAN KOLOM TERPISAH */
+    /* 2. TABLE DENGAN REVISI NAMA KOLOM "ID ANGGOTA" */
     autoTable(doc, {
       startY: 40,
       margin: { left: 20, right: 20 },
-      head: [["NO", "TANGGAL", "NAMA", "ROLE", "BUKU", "QTY", "STATUS"]],
+      head: [["NO", "ID ANGGOTA", "TANGGAL", "NAMA", "ROLE", "BUKU", "QTY", "STATUS"]], 
       body: reportData.map((item, index) => {
         const d = new Date(item.date);
         
@@ -77,17 +75,18 @@ export default function Reports() {
 
         return [
           index + 1,
+          item.memberId || "-", 
           d.toLocaleDateString("id-ID"),
-          item.name.toUpperCase(),
+          item.name ? item.name.toUpperCase() : "-", // Pengaman dari error undefined
           item.role || "-",
           cleanBookTitle, 
           item.quantity || "1", 
-          item.status ? item.status.toUpperCase() : "-"
+          item.status ? item.status.toUpperCase() : "-" // Pengaman dari error undefined
         ];
       }),
       styles: {
-        fontSize: 8.5,
-        cellPadding: 4,
+        fontSize: 8, 
+        cellPadding: 3.5,
         valign: 'middle',
       },
       headStyles: {
@@ -97,22 +96,23 @@ export default function Reports() {
         halign: 'center'
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 15 }, 
-        1: { halign: 'center', cellWidth: 28 }, 
-        2: { fontStyle: 'bold', cellWidth: 35 }, 
-        3: { cellWidth: 20 },
-        4: { cellWidth: 'auto' }, 
-        5: { halign: 'center', cellWidth: 15 }, 
-        6: { halign: 'center', cellWidth: 30 }
+        0: { halign: 'center', cellWidth: 10 }, 
+        1: { halign: 'center', cellWidth: 25 }, 
+        2: { halign: 'center', cellWidth: 25 }, 
+        3: { fontStyle: 'bold', cellWidth: 30 }, 
+        4: { cellWidth: 18 },                   
+        5: { cellWidth: 'auto' },               
+        6: { halign: 'center', cellWidth: 12 }, 
+        7: { halign: 'center', cellWidth: 25 }  
       },
       didParseCell: (data) => {
-        if (data.section === "body" && data.column.index === 6) {
-          const status = data.cell.raw as string;
-          if (status.includes("TEPAT") || status.includes("KEMBALI")) {
+        if (data.section === "body" && data.column.index === 7) {
+          const rawStatus = data.cell.raw ? String(data.cell.raw).toUpperCase() : "";
+          if (rawStatus.includes("TEPAT") || rawStatus.includes("KEMBALI")) {
             data.cell.styles.textColor = [22, 163, 74]; 
-          } else if (status.includes("TERLAMBAT") || status.includes("TELAT")) {
+          } else if (rawStatus.includes("TERLAMBAT") || rawStatus.includes("TELAT")) {
             data.cell.styles.textColor = [220, 38, 38]; 
-          } else if (status.includes("PINJAM") || status.includes("DIPINJAM")) {
+          } else if (rawStatus.includes("PINJAM") || rawStatus.includes("DIPINJAM")) {
             data.cell.styles.textColor = [217, 119, 6]; 
           }
         }
@@ -121,8 +121,7 @@ export default function Reports() {
 
     /* 3. FOOTER */
     const finalY = (doc as any).lastAutoTable.finalY || 40;
-    const pageHeight = doc.internal.pageSize.height;
-
+    
     let signY = finalY + 20;
     if (signY > pageHeight - 50) {
         doc.addPage();
@@ -141,7 +140,6 @@ export default function Reports() {
     doc.setFont("helvetica", "normal");
     doc.text("NIP. 2026.04.29.001", pageWidth - 70, signY + 35);
 
-    // Penyesuaian nama file ketika didownload
     const namaFile = month === "all" ? `Laporan_${type}_Tahunan_${year}.pdf` : `Laporan_${type}_${(month as number) + 1}_${year}.pdf`;
     doc.save(namaFile);
   };
@@ -158,7 +156,6 @@ export default function Reports() {
           <option value="kunjungan">Riwayat Kunjungan</option>
         </select>
 
-        {/* Dropdown Bulan yang dimodifikasi */}
         <select 
           value={month} 
           onChange={e => setMonth(e.target.value === "all" ? "all" : Number(e.target.value))} 

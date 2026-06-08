@@ -12,33 +12,40 @@ export default function TransactionReport({ month, year }: Props) {
   const transactions = history
     .filter(item => item.category === "transaksi")
     .filter(item => {
-      const date = new Date(item.date);
+      // Mengantisipasi jika field tanggal di database menggunakan 'date' atau 'borrowDate'
+      const dateStr = item.date || item.borrowDate;
+      const date = new Date(dateStr);
       return !isNaN(date.getTime()) && 
              date.getMonth() + 1 === Number(month) && 
              date.getFullYear() === Number(year);
     })
     .map((item, index) => {
-      const date = new Date(item.date);
+      const dateStr = item.date || item.borrowDate;
+      const date = new Date(dateStr);
+      
+      // Ambil status asli dari backend atau history context
+      const statusAsli = item.status ? item.status.toLowerCase() : "";
+
       return {
         no: index + 1,
-        tanggal: date.getDate().toString().padStart(2, "0"),
-        nama: item.name,
-        buku: item.activity || "-",
+        tanggal: !isNaN(date.getTime()) ? date.getDate().toString().padStart(2, "0") : "00",
+        memberId: item.memberId || item.idAnggota || "-", // Tambahan untuk memunculkan Member ID (Foto 3)
+        nama: item.studentName || item.name || "-",
+        buku: item.bookTitle || item.activity || "-",
         status:
-          item.status === "meminjam" ? "Dipinjam" :
-          item.status === "tepat" ? "Dikembalikan" :
-          item.status === "telat" ? "Terlambat" : "-",
+          statusAsli === "meminjam" || statusAsli === "dipinjam" ? "Dipinjam" :
+          statusAsli === "tepat" || statusAsli === "dikembalikan" ? "Dikembalikan" :
+          statusAsli === "telat" || statusAsli === "terlambat" ? "Terlambat" : "-",
       };
     });
 
-  // 2. FUNGSI CETAK (Pilih 'Save as PDF' di browser)
   const handlePrint = () => {
     window.print();
   };
 
   return (
     <div className="flex flex-col gap-6">
-      {/* TOMBOL DOWNLOAD (Otomatis hilang saat jadi PDF) */}
+      {/* TOMBOL DOWNLOAD */}
       <div className="flex justify-between items-center print:hidden bg-slate-800 p-5 rounded-2xl shadow-xl">
         <div className="text-white">
           <h3 className="font-black text-sm uppercase tracking-widest">Laporan Siap Cetak</h3>
@@ -84,6 +91,7 @@ export default function TransactionReport({ month, year }: Props) {
             <tr className="bg-slate-900">
               <th className="border-2 border-slate-900 px-4 py-4 text-[10px] uppercase font-black text-white w-12">No</th>
               <th className="border-2 border-slate-900 px-4 py-4 text-[10px] uppercase font-black text-white text-left">Tanggal</th>
+              <th className="border-2 border-slate-900 px-4 py-4 text-[10px] uppercase font-black text-white text-left">ID Anggota</th> {/* REVISI FOTO 1 & 3 */}
               <th className="border-2 border-slate-900 px-4 py-4 text-[10px] uppercase font-black text-white text-left font-sans">Nama Anggota</th>
               <th className="border-2 border-slate-900 px-4 py-4 text-[10px] uppercase font-black text-white text-left">Aktivitas Buku</th>
               <th className="border-2 border-slate-900 px-4 py-4 text-[10px] uppercase font-black text-white">Status</th>
@@ -92,7 +100,7 @@ export default function TransactionReport({ month, year }: Props) {
           <tbody>
             {transactions.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-24 text-center text-slate-300 italic font-medium tracking-widest text-xs uppercase border-2 border-slate-100">
+                <td colSpan={6} className="py-24 text-center text-slate-300 italic font-medium tracking-widest text-xs uppercase border-2 border-slate-100">
                   Data transaksi tidak tersedia
                 </td>
               </tr>
@@ -101,15 +109,17 @@ export default function TransactionReport({ month, year }: Props) {
                 <tr key={index} className={index % 2 === 1 ? "bg-slate-50/80" : "bg-white"}>
                   <td className="border-2 border-slate-200 px-4 py-4 text-center text-[11px] font-black text-slate-400">{t.no}</td>
                   <td className="border-2 border-slate-200 px-4 py-4 text-[11px] font-bold text-slate-700">{t.tanggal}/{month}/{year}</td>
+                  <td className="border-2 border-slate-200 px-4 py-4 text-[11px] font-bold text-slate-900 uppercase">{t.memberId}</td> {/* REVISI FOTO 3 */}
                   <td className="border-2 border-slate-200 px-4 py-4 text-[11px] font-black text-slate-900 uppercase tracking-tight">{t.nama}</td>
                   <td className="border-2 border-slate-200 px-4 py-4 text-[11px] text-slate-600 italic leading-snug">{t.buku}</td>
                   <td className="border-2 border-slate-200 px-4 py-4 text-center">
+                    {/* SAFE GUARD: Menggunakan optional chaining (?.) agar tidak crash jika status kosong */}
                     <div className={`text-[9px] font-black px-3 py-1.5 inline-block border-2 rounded-md ${
                       t.status === "Terlambat" ? "bg-red-50 text-red-700 border-red-700" :
                       t.status === "Dipinjam" ? "bg-amber-50 text-amber-700 border-amber-700" :
                       "bg-emerald-50 text-emerald-700 border-emerald-700"
                     }`}>
-                      {t.status.toUpperCase()}
+                      {(t.status || "-").toUpperCase()}
                     </div>
                   </td>
                 </tr>
@@ -118,7 +128,7 @@ export default function TransactionReport({ month, year }: Props) {
           </tbody>
         </table>
 
-        {/* TANDA TANGAN (Hanya muncul saat di-print) */}
+        {/* TANDA TANGAN */}
         <div className="mt-24 hidden print:flex justify-end pr-10">
           <div className="text-center w-64">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-24">Dicetak Pada: {new Date().toLocaleDateString('id-ID')}</p>

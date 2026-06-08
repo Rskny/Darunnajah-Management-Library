@@ -1,107 +1,214 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const authenticateToken = require('../authMiddleware');
+const authenticateToken = require('../authMiddleware'); 
+
 
 /**
  * @swagger
- * /api/reports:
+ * swagger: "2.0"
+ * info:
+ *   title: API Transactions
+ *   version: 1.0.0
+ *   description: API untuk manajemen transaksi peminjaman buku
+ * basePath: /api/transactions
+ * components:
+ *   securityDefinitions:
+ *     bearerAuth:
+ *       type: apiKey
+ *       in: header
+ *       name: Authorization
+ *   schemas:
+ *     Transaction:
+ *       type: object
+ *       required:
+ *         - memberId
+ *         - bookId
+ *         - studentName
+ *         - status
+ *         - borrowDate
+ *         - dueDate
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: ID Otomatis dari sistem
+ *         memberId:
+ *           type: string
+ *           description: ID Unik Anggota (NIS/NIP)
+ *         bookId:
+ *           type: integer
+ *           description: ID Buku yang dipinjam
+ *         studentName:
+ *           type: string
+ *           description: Nama lengkap anggota
+ *         role:
+ *           type: string
+ *           default: siswa
+ *         class:
+ *           type: string
+ *         major:
+ *           type: string
+ *         gender:
+ *           type: string
+ *         quantity:
+ *           type: integer
+ *           default: 1
+ *         status:
+ *           type: string
+ *           example: Dipinjam
+ *         borrowDate:
+ *           type: string
+ *           format: date
+ *         dueDate:
+ *           type: string
+ *           format: date
+ *     TransactionResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ */
+
+
+/**
+ * @swagger
+ * /:
  *   get:
- *     summary: Mendapatkan data riwayat transaksi atau kunjungan berdasarkan bulan & tahun
- *     tags: [Reports]
+ *     summary: Mengambil semua data riwayat transaksi peminjaman
+ *     tags: [Transactions]
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: type
- *         required: true
- *         schema:
- *           type: string
- *           enum: [transaksi, kunjungan]
- *         description: Jenis laporan
- *       - in: query
- *         name: month
- *         required: true
- *         schema:
- *           type: integer
- *         description: Bulan (indeks 0-11) ATAU string "all" untuk laporan tahunan
- *       - in: query
- *         name: year
- *         required: true
- *         schema:
- *           type: integer
- *         description: Tahun (contoh 2026)
  *     responses:
  *       200:
- *         description: Berhasil mendapatkan laporan
+ *         description: Berhasil mengambil semua list transaksi
+ *       500:
+ *         description: Eror internal pada server
  */
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const { type, month, year } = req.query;
+        const transactions = await db('transactions')
+            .select('transactions.*', 'books.title as bookTitle')
+            .leftJoin('books', 'transactions.bookId', 'books.id')
+            .orderBy('transactions.id', 'desc');
 
-        if (!type || month === undefined || !year) {
-            return res.status(400).json({ error: 'Parameter type, month, dan year wajib diisi' });
-        }
-
-        const isYearly = month === 'all';
-        const sqlYear = parseInt(year);
-        const sqlMonth = !isYearly ? parseInt(month) + 1 : null;
-
-        let result = [];
-
-        if (type === 'transaksi') {
-            let query = db('transactions')
-                .select('transactions.*', 'books.title as bookTitle')
-                .leftJoin('books', 'transactions.bookId', 'books.id')
-                .whereRaw('YEAR(transactions.borrowDate) = ?', [sqlYear]);
-
-            if (!isYearly) {
-                query = query.andWhereRaw('MONTH(transactions.borrowDate) = ?', [sqlMonth]);
-            }
-
-            const rawData = await query.orderBy('transactions.id', 'desc');
-
-            result = rawData.map(item => ({
-                id: item.id,
-                date: item.borrowDate,
-                name: item.studentName,
-                role: item.role,
-                quantity: item.quantity,
-                bookTitle: item.bookTitle,
-                activity: `Peminjaman Buku ${item.bookTitle} (${item.quantity} buah)`,
-                status: item.status,
-                description: item.status === 'Dikembalikan' 
-                    ? `Selesai (Tenggat: ${new Date(item.dueDate).toLocaleDateString('id-ID')})` 
-                    : `Aktif (Tenggat: ${new Date(item.dueDate).toLocaleDateString('id-ID')})`
-            }));
-
-        } else if (type === 'kunjungan') {
-            let query = db('visits').whereRaw('YEAR(date) = ?', [sqlYear]);
-
-            if (!isYearly) {
-                query = query.andWhereRaw('MONTH(date) = ?', [sqlMonth]);
-            }
-
-            const rawData = await query.orderBy('id', 'desc');
-
-            result = rawData.map(item => ({
-                id: item.id,
-                date: item.date,
-                name: item.name,
-                role: item.chosing,
-                quantity: '-',
-                activity: `Tujuan: ${item.purpose}`,
-                status: 'Selesai',
-                description: `Pukul ${item.time || '-'}`
-            }));
-        } else {
-            return res.status(400).json({ error: 'Tipe tidak valid' });
-        }
-
-        res.json(result);
+        res.status(200).json(transactions);
     } catch (error) {
-        res.status(500).json({ error: 'Gagal mendapatkan data laporan', detail: error.message });
+        res.status(500).json({ error: 'Gagal mengambil data transaksi', detail: error.message });
     }
 });
+
+
+/**
+ * @swagger
+ * /:
+ *   post:
+ *     summary: Membuat dan mencatat transaksi peminjaman buku baru
+ *     tags: [Transactions]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - memberId
+ *               - bookId
+ *               - studentName
+ *               - status
+ *               - borrowDate
+ *               - dueDate
+ *             properties:
+ *               memberId:
+ *                 type: string
+ *               bookId:
+ *                 type: integer
+ *               studentName:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *               class:
+ *                 type: string
+ *               major:
+ *                 type: string
+ *               gender:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *               borrowDate:
+ *                 type: string
+ *                 format: date
+ *               dueDate:
+ *                 type: string
+ *                 format: date
+ *               quantity:
+ *                 type: integer
+ *                 default: 1
+ *     responses:
+ *       201:
+ *         description: Transaksi berhasil dicatat dan stok buku berkurang
+ *       400:
+ *         description: Input tidak lengkap atau stok buku habis
+ *       404:
+ *         description: Buku tidak ditemukan
+ *       500:
+ *         description: Eror internal pada server
+ */
+router.post('/', authenticateToken, async (req, res) => {
+    try {
+        const { 
+            memberId, 
+            bookId, 
+            studentName, 
+            role, 
+            class: kelas, 
+            major, 
+            gender, 
+            status, 
+            borrowDate, 
+            dueDate, 
+            quantity = 1 
+        } = req.body;
+
+        // Validasi input wajib
+        if (!memberId || !bookId || !studentName || !status || !borrowDate || !dueDate) {
+            return res.status(400).json({ error: 'Data input tidak lengkap' });
+        }
+
+        const book = await db('books').where({ id: bookId }).first();
+        if (!book) {
+            return res.status(404).json({ error: 'Buku tidak ditemukan di katalog' });
+        }
+        if (book.stock < quantity) {
+            return res.status(400).json({ error: 'Stok buku tidak mencukupi untuk dipinjam' });
+        }
+
+        await db.transaction(async (trx) => {
+            await trx('transactions').insert({
+                memberId,
+                bookId,
+                studentName,
+                role,
+                class: kelas,
+                major,
+                gender,
+                quantity,
+                status,
+                borrowDate,
+                dueDate
+            });
+
+            await trx('books')
+                .where({ id: bookId })
+                .decrement('stock', quantity);
+        });
+
+        res.status(201).json({ message: 'Transaksi berhasil dicatat dan stok diperbarui' });
+    } catch (error) {
+        res.status(500).json({ error: 'Gagal memproses transaksi baru', detail: error.message });
+    }
+});
+
 
 module.exports = router;

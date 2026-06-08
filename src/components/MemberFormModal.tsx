@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Member } from "../pages/DataAnggota";
+import apiClient from "../apiClient"; // 1. IMPORT API CLIENT BAWAAN
 
 interface Props {
   onClose: () => void;
@@ -7,7 +8,8 @@ interface Props {
 }
 
 const REQUIRED_HEADERS = ["nama", "status", "kelas", "jurusan", "gender"];
-const REQUIRED_FIELDS = ["nama", "kelas", "jurusan", "gender"];
+// 2. MASUKKAN STATUS SEBAGAI FIELD WAJIB DI MANUAL SUBMIT
+const REQUIRED_FIELDS = ["nama", "status", "kelas", "jurusan", "gender"];
 
 const KELAS_LIST = ["1", "2", "3", "4", "5", "6", "Intensive" , "-"];
 const JURUSAN_LIST = ["Tsanawiyah", "IPS", "IPA", "MAK", "-"];
@@ -22,6 +24,28 @@ export default function MemberFormModal({ onClose, onImport }: Props) {
     jurusan: "",
     gender: "",
   });
+
+  // 3. STATE UNTUK MENAMPUNG ID OTOMATIS YANG DI-FETCH DARI BACKEND
+  const [generatedId, setGeneratedId] = useState<string>("");
+
+  // 4. USEEFFECT UNTUK MEMANGGIL API ID BARU SETIAP KALI STATUS BERUBAH
+  useEffect(() => {
+    const fetchNextId = async () => {
+      if (manualData.status === "student" || manualData.status === "teacher") {
+        try {
+          const res = await apiClient.get(`/members/next-id?status=${manualData.status}`);
+          setGeneratedId(res.data.nextId);
+        } catch (err) {
+          console.error("Gagal memuat nomor ID otomatis:", err);
+          setGeneratedId("Gagal memuat ID");
+        }
+      } else {
+        setGeneratedId(""); // Kosongkan kembali jika opsi default terpilih
+      }
+    };
+
+    fetchNextId();
+  }, [manualData.status]);
 
   /* ================= CSV ================= */
   const handleCSVImport = (file: File) => {
@@ -153,7 +177,45 @@ export default function MemberFormModal({ onClose, onImport }: Props) {
           {/* METODE 2: MANUAL FORM */}
           <div className="space-y-4">
             
-            {/* NAMA */}
+            {/* A. DROPDOWN STATUS / KATEGORI (DINAINKAN KE ATAS SEBAGAI TRIGGER UTAMA ID) */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase text-slate-500">
+                Status / Peran <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  className={`w-full pl-4 pr-10 py-3 bg-slate-100 focus:ring-2 focus:ring-blue-600 font-medium text-sm rounded-xl border-none outline-none transition appearance-none cursor-pointer ${
+                    manualData.status === "" ? "text-slate-400" : "text-slate-800"
+                  }`}
+                  value={manualData.status}
+                  onChange={(e) =>
+                    setManualData({ ...manualData, status: e.target.value })
+                  }
+                >
+                  <option value="" className="text-slate-400 bg-white">Pilih Status / Peran</option>
+                  <option value="student" className="text-slate-800 bg-white">Student (Siswa)</option>
+                  <option value="teacher" className="text-slate-800 bg-white">Teacher (Guru)</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+              </div>
+            </div>
+
+            {/* B. INPUT ID ANGGOTA OTOMATIS (READ-ONLY / DISABLED) */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase text-slate-400">
+                ID Anggota (Otomatis)
+              </label>
+              <input
+                type="text"
+                disabled // Dipasang disabled agar admin tidak bisa edit manual
+                className="w-full px-4 py-3 bg-slate-200 text-slate-500 font-bold text-sm rounded-xl border-none outline-none cursor-not-allowed tracking-wider"
+                value={generatedId || "Pilih Status / Peran Terlebih Dahulu..."}
+              />
+            </div>
+
+            {/* C. NAMA */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold uppercase text-slate-500">
                 Nama Lengkap <span className="text-red-500">*</span>
@@ -169,23 +231,7 @@ export default function MemberFormModal({ onClose, onImport }: Props) {
               />
             </div>
 
-            {/* STATUS / ROLE */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase text-slate-500">
-                Status / Peran
-              </label>
-              <input
-                type="text"
-                placeholder="Contoh: Siswa / Guru / Staf"
-                className="w-full px-4 py-3 bg-slate-100 focus:ring-2 focus:ring-blue-600 font-medium text-sm rounded-xl border-none outline-none transition placeholder-slate-400 text-slate-800"
-                value={manualData.status}
-                onChange={(e) =>
-                  setManualData({ ...manualData, status: e.target.value })
-                }
-              />
-            </div>
-
-            {/* KELAS + JURUSAN */}
+            {/* D. KELAS + JURUSAN */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold uppercase text-slate-500">
@@ -242,7 +288,7 @@ export default function MemberFormModal({ onClose, onImport }: Props) {
               </div>
             </div>
 
-            {/* GENDER */}
+            {/* E. GENDER */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold uppercase text-slate-500">
                 Gender <span className="text-red-500">*</span>

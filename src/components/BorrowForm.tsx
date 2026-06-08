@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { CLASS_CODES, MAJORS } from "../constants/data";
 import { useHistory } from "../context/HistoryContext";
 import apiClient from "../apiClient";
-import Select from "react-select"; // Import react-select
+import Select from "react-select"; 
 
 const GENDERS = ["Laki-laki", "Perempuan"];
 
@@ -14,11 +14,11 @@ interface Props {
 const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
   const { addHistory } = useHistory();
 
-  // State untuk data dari backend
   const [memberOptions, setMemberOptions] = useState([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(true);
 
   const [formData, setFormData] = useState({
+    memberId: "", 
     name: "",
     role: "Siswa",
     class: "-",
@@ -29,15 +29,14 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
 
   const [days, setDays] = useState(7);
 
-  // 1. Fetch daftar anggota saat modal dibuka
   useEffect(() => {
     const fetchMembers = async () => {
       try {
         const res = await apiClient.get("/members/selection");
         const formatted = res.data.map((m: any) => ({
           value: m.id,
-          label: m.nama,
-          raw: m // Simpan data lengkap untuk autofill
+          label: m.nama, // REVISI FOTO 1: Hanya menampilkan nama saja di atas dropdown
+          raw: m 
         }));
         setMemberOptions(formatted);
       } catch (err) {
@@ -49,17 +48,27 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
     fetchMembers();
   }, []);
 
-  // 2. Handler saat nama dipilih (Autofill)
   const handleSelectMember = (selected: any) => {
     if (selected) {
-      const { nama, status, kelas, jurusan, gender } = selected.raw;
+      const { id, nis, nama, status, kelas, jurusan, gender } = selected.raw;
       setFormData({
         ...formData,
+        memberId: nis || String(id), 
         name: nama,
         role: status,
         class: kelas,
         major: jurusan,
         gender: gender || GENDERS[0]
+      });
+    } else {
+      setFormData({
+        ...formData,
+        memberId: "",
+        name: "",
+        role: "Siswa",
+        class: "-",
+        major: "-",
+        gender: GENDERS[0]
       });
     }
   };
@@ -70,7 +79,10 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name) return;
+    if (!formData.name || !formData.memberId) {
+      alert("Harap pilih nama anggota yang valid!");
+      return;
+    }
 
     try {
       const booksRes = await apiClient.get('/books');
@@ -91,6 +103,7 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
       due.setDate(today.getDate() + days);
 
       await apiClient.post("/transactions", {
+        memberId: formData.memberId, 
         bookId: foundBook.id,
         studentName: formData.name,
         role: formData.role.toLowerCase(),
@@ -110,7 +123,7 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
         activity: `Meminjam ${bookTitle}`,
         status: "Meminjam",
         category: "transaksi",
-        description: "-"
+        description: `ID Anggota: ${formData.memberId}`
       });
 
       window.dispatchEvent(new Event("transactionsUpdated"));
@@ -161,9 +174,19 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
                     borderRadius: '0.75rem',
                     padding: '3px',
                     border: 'none',
-                    backgroundColor: '#f1f5f9', // slate-100
+                    backgroundColor: '#f1f5f9', 
                   }),
                 }}
+              />
+            </div>
+
+            {/* REVISI LABEL: ID ANGGOTA (OTOMATIS) */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase text-slate-500">ID Anggota</label>
+              <input 
+                readOnly 
+                value={formData.memberId || "Belum memilih nama"} 
+                className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed text-slate-600" 
               />
             </div>
 
@@ -182,7 +205,7 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
               />
             </div>
 
-            {/* KELAS + JURUSAN (AUTO-FILLED) */}
+            {/* KELAS + JURUSAN */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold uppercase text-slate-500">Kelas</label>
@@ -195,12 +218,10 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-               {/* ROLE (AUTO-FILLED) */}
                <div>
                   <label className="text-xs font-bold uppercase text-slate-500">Role</label>
                   <input readOnly value={formData.role} className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed" />
                </div>
-               {/* GENDER (AUTO-FILLED) */}
                <div>
                   <label className="text-xs font-bold uppercase text-slate-500">Gender</label>
                   <input readOnly value={formData.gender} className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed" />
