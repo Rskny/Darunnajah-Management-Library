@@ -2,7 +2,7 @@ exports.up = function (knex) {
     return knex.schema.createTable('visits', table => {
         table.increments('id').primary();
         table.string('name').notNullable();
-        table.string('nis').notNullable();
+        table.string('memberId').notNullable(); // <-- DIGANTI DARI table.string('nis')
         table.string('kelas').nullable();
         table.string('chosing').notNullable().defaultTo('Siswa');
         table.string('purpose').notNullable().defaultTo('Membaca');

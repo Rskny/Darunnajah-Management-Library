@@ -4,8 +4,18 @@ import TableBox from "../components/ui/TableBox";
 import apiClient from "../apiClient";
 import { useLocation } from "react-router-dom";
 
-export default function RiwayatKunjungan() {
+// 1. TAMBAHKAN FUNGSI CEK HARI INI (Sama seperti di file sebelah)
+const isToday = (dateString: string) => {
+    const d = new Date(dateString);
+    const now = new Date();
+    return (
+        d.getDate() === now.getDate() &&
+        d.getMonth() === now.getMonth() &&
+        d.getFullYear() === now.getFullYear()
+    );
+};
 
+export default function RiwayatKunjungan() {
     const [data, setData] = useState<any[]>([]);
     const [selectMode, setSelectMode] = useState(false);
     const [selected, setSelected] = useState<number[]>([]);
@@ -16,9 +26,16 @@ export default function RiwayatKunjungan() {
     const searchParams = new URLSearchParams(location.search);
     const q = (searchParams.get("search") || "").toLowerCase();
 
+    // 2. PERBAIKI FUNGSI FETCH AGAR MENYARING DATA HARI INI
     const fetchHistory = async () => {
-        const res = await apiClient.get("/visits");
-        setData(res.data);
+        try {
+            const res = await apiClient.get("/visits");
+            // Ambil data yang BUKAN hari ini (!isToday)
+            const pastVisits = res.data.filter((item: any) => !isToday(item.date));
+            setData(pastVisits);
+        } catch (err) {
+            console.error("Gagal memuat riwayat kunjungan:", err);
+        }
     };
 
     useEffect(() => { fetchHistory() }, []);
@@ -44,6 +61,8 @@ export default function RiwayatKunjungan() {
         .filter((item: any) =>
             !q ||
             item.name?.toLowerCase().includes(q) ||
+            item.memberId?.toLowerCase().includes(q) || 
+            item.nis?.toLowerCase().includes(q) ||
             item.chosing?.toLowerCase().includes(q) ||
             item.purpose?.toLowerCase().includes(q) ||
             item.description?.toLowerCase().includes(q)
@@ -53,7 +72,6 @@ export default function RiwayatKunjungan() {
 
     return (
         <div className="p-8 space-y-8">
-
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
                 <PageHeader
                     title="Riwayat Kunjungan"
@@ -82,7 +100,6 @@ export default function RiwayatKunjungan() {
 
             <TableBox>
                 <table className="w-full text-sm">
-
                     <thead className="bg-slate-100 text-xs uppercase text-slate-600">
                         <tr className="text-center">
                             {selectMode && (
@@ -94,6 +111,7 @@ export default function RiwayatKunjungan() {
                             )}
                             <th className="p-4 w-14">No</th>
                             <th className="p-4">Tanggal</th>
+                            <th className="p-4 text-left">ID Anggota</th> 
                             <th className="p-4 text-left">Nama</th>
                             <th className="p-4 text-left">Role</th>
                             <th className="p-4 text-left">Kegiatan</th>
@@ -104,15 +122,14 @@ export default function RiwayatKunjungan() {
                     <tbody>
                         {sorted.length === 0 ? (
                             <tr>
-                                <td colSpan={selectMode ? 7 : 6}
+                                <td colSpan={selectMode ? 8 : 7} 
                                     className="py-20 text-center text-slate-400 font-medium">
-                                    Tidak ada riwayat kunjungan
+                                    Tidak ada riwayat kunjungan (data hari ini berada di menu Kunjungan)
                                 </td>
                             </tr>
                         ) : (
                             sorted.map((item, i) => (
                                 <tr key={item.id} className="border-t text-center hover:bg-slate-50">
-
                                     {selectMode && (
                                         <td>
                                             <input type="checkbox"
@@ -123,6 +140,7 @@ export default function RiwayatKunjungan() {
 
                                     <td className="p-4 font-semibold text-slate-500">{i + 1}</td>
                                     <td>{new Date(item.date).toLocaleDateString("id-ID")}</td>
+                                    <td className="text-left font-mono font-bold text-slate-700">{item.memberId || item.nis || "-"}</td> 
                                     <td className="text-left font-medium">{item.name}</td>
                                     <td className="text-left capitalize">{item.chosing}</td>
                                     <td className="text-left max-w-[240px] truncate">
@@ -133,15 +151,12 @@ export default function RiwayatKunjungan() {
                                             Kunjungan
                                         </span>
                                     </td>
-
                                 </tr>
                             ))
                         )}
                     </tbody>
-
                 </table>
             </TableBox>
-
         </div>
     );
 }

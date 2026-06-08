@@ -8,6 +8,7 @@ import { useLocation } from "react-router-dom";
 
 interface Visit {
   id: number;
+  memberId: string; // <-- Ditambahkan properti memberId menggantikan nis
   name: string;
   kelas: string;
   chosing: string;
@@ -39,23 +40,27 @@ const Visits: React.FC = () => {
   const { addHistory } = useHistory();
 
   const fetchVisits = async () => {
-    const res = await apiClient.get("/visits");
-    setVisits(res.data.filter((v: Visit) => isToday(v.date)));
+    try {
+      const res = await apiClient.get("/visits");
+      setVisits(res.data.filter((v: Visit) => isToday(v.date)));
+    } catch (err) {
+      console.error("Gagal memuat data kunjungan", err);
+    }
   };
 
   useEffect(() => {
     fetchVisits();
-    const interval = setInterval(fetchVisits, 60000); // refresh setiap 60 detik
+    const interval = setInterval(fetchVisits, 60000); 
     return () => clearInterval(interval);
   }, []);
 
-  // TAMBAH VISIT
-  const handleAddVisit = async (data: Omit<Visit, "id" | "date" | "time">) => {
+  // PROSES SIMPAN KUNJUNGAN KE BACKEND
+  const handleAddVisit = async (data: { memberId: string; name: string; kelas: string; chosing: string; purpose: string }) => {
     try {
       const now = new Date();
       await apiClient.post("/visits", {
+        memberId: data.memberId, // <-- MENGIRIM MEMBER ID ASLI KE BACKEND
         name: data.name,
-        nis: data.chosing === "Siswa" ? "N/A" : data.chosing,
         kelas: data.kelas,
         chosing: data.chosing,
         purpose: data.purpose,
@@ -63,10 +68,8 @@ const Visits: React.FC = () => {
         time: now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
       });
 
-      // Refresh tabel kunjungan
       fetchVisits();
 
-      // Simpan ke history lokal
       addHistory({
         id: Date.now(),
         date: new Date(),
@@ -74,12 +77,12 @@ const Visits: React.FC = () => {
         role: data.chosing,
         activity: "Kunjungan",
         category: "kunjungan",
-        description: data.purpose,
+        description: `Tujuan: ${data.purpose} (ID: ${data.memberId})`,
       });
 
       setShowModal(false);
     } catch (err) {
-      console.error(err);
+      console.error("Gagal menambahkan kunjungan:", err);
     }
   };
 
@@ -87,6 +90,7 @@ const Visits: React.FC = () => {
     .filter((v) =>
       !q ||
       v.name.toLowerCase().includes(q) ||
+      v.memberId?.toLowerCase().includes(q) || // <-- SEKARANG BISA CARI BERDASARKAN ID / NIS JUGA
       v.chosing.toLowerCase().includes(q) ||
       v.purpose.toLowerCase().includes(q) ||
       v.kelas.toLowerCase().includes(q)
@@ -97,7 +101,6 @@ const Visits: React.FC = () => {
   return (
     <div className="p-8 space-y-6">
       
-      {/* HEADER UTAMA: Tetap berada di atas layout normal halaman */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
         <PageHeader
           title="Kunjungan Hari Ini"
@@ -107,7 +110,7 @@ const Visits: React.FC = () => {
           right={
             <button
               onClick={() => setShowModal(true)}
-              className="px-6 py-3 bg-[#3b5998] text-white rounded-2xl font-bold shadow"
+              className="px-6 py-3 bg-[#3b5998] text-white rounded-2xl font-bold shadow hover:bg-[#2d4373] transition-all"
             >
               + Tambah Kunjungan
             </button>
@@ -115,20 +118,17 @@ const Visits: React.FC = () => {
         />
       </div>
 
-      {/* BANNER INFO */}
       <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium">
         Data kunjungan hanya tampil 24 jam lalu otomatis masuk riwayat.
       </div>
 
-      {/* KUNCI UTAMA: Disini kita bungkus TableBox dengan overflow-y-auto dan max-height 
-          agar area tabel punya scroll tersendiri, sehingga PageHeader di atas dijamin DIAM! */}
       <div className="overflow-y-auto max-h-[58vh] rounded-3xl border border-slate-200 shadow-sm bg-white">
         <TableBox>
           <table className="w-full text-sm">
-            {/* Judul kolom tabel (thead) dipasang sticky top agar dia tidak hilang saat baris disorot ke bawah */}
             <thead className="bg-slate-100 text-xs uppercase sticky top-0 z-10 shadow-sm">
               <tr>
                 <th className="p-4 text-center w-16">No</th>
+                <th className="p-4 text-left">ID</th> {/* <-- KOLOM BARU DI TABLE */}
                 <th className="p-4 text-left">Nama</th>
                 <th className="p-4 text-left">Kelas</th>
                 <th className="p-4 text-left">Status</th>
@@ -141,7 +141,7 @@ const Visits: React.FC = () => {
             <tbody>
               {sorted.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-20 text-center text-slate-400">
+                  <td colSpan={8} className="py-20 text-center text-slate-400"> {/* Colspan diubah ke 8 */}
                     Belum ada kunjungan hari ini
                   </td>
                 </tr>
@@ -149,12 +149,13 @@ const Visits: React.FC = () => {
                 sorted.map((v, i) => (
                   <tr key={v.id} className="border-t hover:bg-slate-50">
                     <td className="p-4 text-center font-semibold text-slate-500">{i + 1}</td>
-                    <td className="p-4">{v.name}</td>
+                    <td className="p-4 font-bold text-slate-700 font-mono">{v.memberId || "-"}</td> {/* <-- VALUE BARU DI TABLE */}
+                    <td className="p-4 font-medium">{v.name}</td>
                     <td className="p-4">{v.kelas}</td>
                     <td className="p-4">{v.chosing}</td>
                     <td className="p-4">{v.purpose}</td>
                     <td className="p-4">{new Date(v.date).toLocaleDateString("id-ID")}</td>
-                    <td className="p-4">{v.time}</td>
+                    <td className="p-4 text-slate-500">{v.time}</td>
                   </tr>
                 ))
               )}
