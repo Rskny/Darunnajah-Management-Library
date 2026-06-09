@@ -1,17 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const authenticateToken = require('../authMiddleware'); 
-
-
+const authenticateToken = require('../authMiddleware');
+ 
+// Fungsi untuk cek apakah hari ini
+const isToday = (dateString) => {
+    const d = new Date(dateString);
+    const now = new Date();
+    return (
+        d.getDate() === now.getDate() &&
+        d.getMonth() === now.getMonth() &&
+        d.getFullYear() === now.getFullYear()
+    );
+};
+ 
 /**
  * @swagger
  * swagger: "2.0"
  * info:
- *   title: API Transactions
+ *   title: API Reports
  *   version: 1.0.0
- *   description: API untuk manajemen transaksi peminjaman buku
- * basePath: /api/transactions
+ *   description: API untuk laporan transaksi peminjaman dan kunjungan
+ * basePath: /api/reports
  * components:
  *   securityDefinitions:
  *     bearerAuth:
@@ -19,31 +29,19 @@ const authenticateToken = require('../authMiddleware');
  *       in: header
  *       name: Authorization
  *   schemas:
- *     Transaction:
+ *     ReportResponse:
  *       type: object
- *       required:
- *         - memberId
- *         - bookId
- *         - studentName
- *         - status
- *         - borrowDate
- *         - dueDate
  *       properties:
  *         id:
  *           type: integer
- *           description: ID Otomatis dari sistem
  *         memberId:
  *           type: string
- *           description: ID Unik Anggota (NIS/NIP)
  *         bookId:
  *           type: integer
- *           description: ID Buku yang dipinjam
  *         studentName:
  *           type: string
- *           description: Nama lengkap anggota
  *         role:
  *           type: string
- *           default: siswa
  *         class:
  *           type: string
  *         major:
@@ -52,163 +50,124 @@ const authenticateToken = require('../authMiddleware');
  *           type: string
  *         quantity:
  *           type: integer
- *           default: 1
  *         status:
  *           type: string
- *           example: Dipinjam
  *         borrowDate:
  *           type: string
  *           format: date
  *         dueDate:
  *           type: string
  *           format: date
- *     TransactionResponse:
+ *         bookTitle:
+ *           type: string
+ *     VisitReportResponse:
  *       type: object
  *       properties:
- *         message:
+ *         id:
+ *           type: integer
+ *         name:
+ *           type: string
+ *         memberId:
+ *           type: string
+ *         kelas:
+ *           type: string
+ *         chosing:
+ *           type: string
+ *         purpose:
+ *           type: string
+ *         date:
+ *           type: string
+ *           format: date
+ *         time:
  *           type: string
  */
-
-
+ 
+ 
 /**
  * @swagger
  * /:
  *   get:
- *     summary: Mengambil semua data riwayat transaksi peminjaman
- *     tags: [Transactions]
+ *     summary: Mengambil data laporan berdasarkan filter
+ *     tags: [Reports]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: type
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [transaksi, kunjungan]
+ *         description: Tipe laporan yang diminta
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: string
+ *         description: Nomor bulan (1-12) atau 'all'
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: integer
+ *         description: Tahun laporan
  *     responses:
  *       200:
- *         description: Berhasil mengambil semua list transaksi
+ *         description: Berhasil mengambil data laporan
+ *       400:
+ *         description: Parameter type wajib diisi
  *       500:
  *         description: Eror internal pada server
  */
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const transactions = await db('transactions')
-            .select('transactions.*', 'books.title as bookTitle')
-            .leftJoin('books', 'transactions.bookId', 'books.id')
-            .orderBy('transactions.id', 'desc');
-
-        res.status(200).json(transactions);
+        const { type, month, year } = req.query;
+ 
+        if (!type) {
+            return res.status(400).json({ error: 'Parameter type wajib diisi (transaksi/kunjungan)' });
+        }
+ 
+        let query;
+ 
+        if (type === 'kunjungan') {
+            // Laporan Kunjungan - ambil dari visits EXCLUDE hari ini
+            query = db('visits').select('*').orderBy('id', 'desc');
+            
+            if (year) {
+                query = query.whereRaw('YEAR(date) = ?', [year]);
+            }
+            if (month && month !== 'all') {
+                query = query.whereRaw('MONTH(date) = ?', [month]);
+            }
+ 
+            // TAMBAHAN: Filter exclude hari ini (sama seperti halaman Riwayat Kunjungan)
+            const allData = await query;
+            const data = allData.filter(item => !isToday(item.date));
+            
+            res.status(200).json(data);
+ 
+        } else {
+            // Default: Laporan Transaksi Peminjaman
+            // PERUBAHAN: Tambah filter status = "Dikembalikan" (sama seperti halaman Riwayat Peminjaman)
+            query = db('transactions')
+                .select('transactions.*', 'books.title as bookTitle')
+                .leftJoin('books', 'transactions.bookId', 'books.id')
+                .where('transactions.status', 'Dikembalikan')  // FILTER BARU
+                .orderBy('transactions.id', 'desc');
+ 
+            if (year) {
+                query = query.whereRaw('YEAR(borrowDate) = ?', [year]);
+            }
+            if (month && month !== 'all') {
+                query = query.whereRaw('MONTH(borrowDate) = ?', [month]);
+            }
+ 
+            const data = await query;
+            res.status(200).json(data);
+        }
+ 
     } catch (error) {
-        res.status(500).json({ error: 'Gagal mengambil data transaksi', detail: error.message });
+        res.status(500).json({ error: 'Gagal mengambil data laporan', detail: error.message });
     }
 });
-
-
-/**
- * @swagger
- * /:
- *   post:
- *     summary: Membuat dan mencatat transaksi peminjaman buku baru
- *     tags: [Transactions]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - memberId
- *               - bookId
- *               - studentName
- *               - status
- *               - borrowDate
- *               - dueDate
- *             properties:
- *               memberId:
- *                 type: string
- *               bookId:
- *                 type: integer
- *               studentName:
- *                 type: string
- *               role:
- *                 type: string
- *               class:
- *                 type: string
- *               major:
- *                 type: string
- *               gender:
- *                 type: string
- *               status:
- *                 type: string
- *               borrowDate:
- *                 type: string
- *                 format: date
- *               dueDate:
- *                 type: string
- *                 format: date
- *               quantity:
- *                 type: integer
- *                 default: 1
- *     responses:
- *       201:
- *         description: Transaksi berhasil dicatat dan stok buku berkurang
- *       400:
- *         description: Input tidak lengkap atau stok buku habis
- *       404:
- *         description: Buku tidak ditemukan
- *       500:
- *         description: Eror internal pada server
- */
-router.post('/', authenticateToken, async (req, res) => {
-    try {
-        const { 
-            memberId, 
-            bookId, 
-            studentName, 
-            role, 
-            class: kelas, 
-            major, 
-            gender, 
-            status, 
-            borrowDate, 
-            dueDate, 
-            quantity = 1 
-        } = req.body;
-
-        // Validasi input wajib
-        if (!memberId || !bookId || !studentName || !status || !borrowDate || !dueDate) {
-            return res.status(400).json({ error: 'Data input tidak lengkap' });
-        }
-
-        const book = await db('books').where({ id: bookId }).first();
-        if (!book) {
-            return res.status(404).json({ error: 'Buku tidak ditemukan di katalog' });
-        }
-        if (book.stock < quantity) {
-            return res.status(400).json({ error: 'Stok buku tidak mencukupi untuk dipinjam' });
-        }
-
-        await db.transaction(async (trx) => {
-            await trx('transactions').insert({
-                memberId,
-                bookId,
-                studentName,
-                role,
-                class: kelas,
-                major,
-                gender,
-                quantity,
-                status,
-                borrowDate,
-                dueDate
-            });
-
-            await trx('books')
-                .where({ id: bookId })
-                .decrement('stock', quantity);
-        });
-
-        res.status(201).json({ message: 'Transaksi berhasil dicatat dan stok diperbarui' });
-    } catch (error) {
-        res.status(500).json({ error: 'Gagal memproses transaksi baru', detail: error.message });
-    }
-});
-
-
+ 
+ 
 module.exports = router;

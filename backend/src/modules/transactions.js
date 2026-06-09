@@ -218,7 +218,7 @@ router.post('/', authenticateToken, async (req, res) => {
  *             $ref: '#/components/schemas/UpdateTransactionRequest'
  *     responses:
  *       200:
- *         description:操作 berhasil
+ *         description: Operasi berhasil
  *       400:
  *         description: Request tidak valid
  *       404:
@@ -265,6 +265,61 @@ router.put('/:id', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error("Error backend:", error);
         res.status(500).json({ error: 'Gagal memperbarui data', detail: error.message });
+    }
+});
+
+
+/**
+ * @swagger
+ * /{id}:
+ *   delete:
+ *     summary: Menghapus riwayat transaksi peminjaman
+ *     tags: [Transactions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID Transaksi yang ingin dihapus
+ *     responses:
+ *       200:
+ *         description: Transaksi berhasil dihapus
+ *       404:
+ *         description: Transaksi tidak ditemukan
+ *       500:
+ *         description: Eror internal pada server
+ */
+router.delete('/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const transaction = await db('transactions').where({ id }).first();
+        if (!transaction) {
+            return res.status(404).json({ error: 'Transaksi tidak ditemukan di database' });
+        }
+
+        // Jika transaksi dihapus paksa saat statusnya BELUM 'Dikembalikan',
+        // naikkan kembali stok bukunya agar data inventory tetap balance.
+        if (transaction.status !== 'Dikembalikan') {
+            await db.transaction(async (trx) => {
+                await trx('books')
+                    .where({ id: transaction.bookId })
+                    .increment('stock', transaction.quantity || 1);
+
+                await trx('transactions').where({ id }).del();
+            });
+        } else {
+            await db('transactions').where({ id }).del();
+        }
+
+        return res.status(200).json({ message: 'Transaksi berhasil dihapus' });
+
+    } catch (error) {
+        console.error("Error backend:", error);
+        res.status(500).json({ error: 'Gagal menghapus data transaksi', detail: error.message });
     }
 });
 
