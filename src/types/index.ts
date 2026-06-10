@@ -5,6 +5,7 @@ export interface Book {
   year: string;
   publisher: string;
   isbn?: string;
+  bookCode?: string;
   category: string;
   classCode?: string;
   major?: string;

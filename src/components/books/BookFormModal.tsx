@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Book } from '../../types';
-import { CATEGORIES } from '../../constants/data';
+import React, { useState, useRef, useEffect } from "react";
+import { Book } from "../../types";
+import { CATEGORIES } from "../../constants/data";
 
 interface BookFormModalProps {
   onClose: () => void;
@@ -16,6 +16,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
     year: '',
     publisher: '',
     isbn: '',
+    bookCode: '',      // ← TAMBAH
     category: CATEGORIES[0],
     stock: 1,
     source: 'Pembelian' as Book['source'],
@@ -27,7 +28,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
 
   useEffect(() => {
     if (initialData) {
-      setFormData({ ...initialData });
+      setFormData({ ...initialData } as any);
     } else {
       const saved = localStorage.getItem("book-form");
       if (saved) setFormData(JSON.parse(saved));
@@ -37,9 +38,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
   const handleChange = (field: string, value: any) => {
     const newData = { ...formData, [field]: value };
     setFormData(newData);
-    if (!initialData) {
-      localStorage.setItem("book-form", JSON.stringify(newData));
-    }
+    if (!initialData) localStorage.setItem("book-form", JSON.stringify(newData));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -56,16 +55,12 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
       const text = event.target?.result as string;
       const lines = text.split('\n');
       const books: any[] = [];
-      
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
-        
         const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
         const cleanFields = matches.map(field => field.replace(/^"|"$/g, '').trim());
-
-        const [title, isbn, author, year, publisher, category, stock, source] = cleanFields;
-
+        const [title, isbn, author, year, publisher, category, stock, source, bookCode] = cleanFields;
         books.push({
           title: title || 'Judul Kosong',
           isbn: isbn || '-',
@@ -75,6 +70,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
           category: category || CATEGORIES[0],
           stock: parseInt(stock) || 1,
           source: (source as Book['source']) || 'Pembelian',
+          bookCode: bookCode || '',
           inputDate: new Date().toISOString().split('T')[0]
         });
       }
@@ -83,7 +79,6 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
     reader.readAsText(file);
   };
 
-  // Class CSS untuk input agar seragam dan rapi
   const inputClassName = "w-full px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl font-medium text-slate-700 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all";
 
   return (
@@ -104,11 +99,9 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
         {/* CONTENT */}
         <div className="flex-1 overflow-y-auto p-8 space-y-6">
           
-          {/* AREA IMPORT CSV */}
           {!initialData && (
             <div className="p-6 bg-blue-50/50 rounded-3xl border border-dashed border-blue-200 text-center">
               <div className="max-w-md mx-auto space-y-2.5">
-                
                 <button 
                   type="button"
                   onClick={() => fileInputRef.current?.click()} 
@@ -119,7 +112,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
                 <p className="text-[11px] text-blue-500 font-medium leading-relaxed">
                   Struktur header wajib: <br />
                   <code className="inline-block bg-blue-100/80 px-1.5 py-0.5 mt-1 rounded font-mono text-[10px] text-blue-700">
-                    title, isbn, author, year, publisher, category, stock, source
+                    title, isbn, author, year, publisher, category, stock, source, bookCode
                   </code>
                 </p>
               </div>
@@ -127,7 +120,6 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
             </div>
           )}
 
-          {/* DIVIDER */}
           {!initialData && (
             <div className="relative flex py-1 items-center">
               <div className="flex-grow border-t border-slate-200"></div>
@@ -136,9 +128,21 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
             </div>
           )}
 
-          {/* FORM MANUAL */}
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
             
+            {/* ID BUKU */}
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-xs font-bold uppercase text-slate-500 ml-1">
+                ID Buku <span className="text-slate-400 font-normal">(Kode Perpustakaan)</span>
+              </label>
+              <input 
+                value={formData.bookCode || ''} 
+                onChange={(e) => handleChange('bookCode', e.target.value)} 
+                placeholder="Contoh: 200 ALI D"
+                className={inputClassName} 
+              />
+            </div>
+
             {/* JUDUL BUKU */}
             <div className="md:col-span-2 space-y-1.5">
               <label className="text-xs font-bold uppercase text-slate-500 ml-1">
@@ -155,9 +159,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
             
             {/* ISBN */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase text-slate-500 ml-1">
-                ISBN
-              </label>
+              <label className="text-xs font-bold uppercase text-slate-500 ml-1">ISBN</label>
               <input 
                 value={formData.isbn} 
                 onChange={(e) => handleChange('isbn', e.target.value)} 
@@ -219,7 +221,6 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
                 min="1" 
                 value={formData.stock} 
                 onChange={(e) => handleChange('stock', parseInt(e.target.value) || 0)} 
-                placeholder="Jumlah stok"
                 className={inputClassName} 
               />
             </div>
@@ -236,7 +237,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
                   onChange={(e) => handleChange('category', e.target.value)} 
                   className={`${inputClassName} appearance-none pr-10 cursor-pointer font-bold`}
                 >
-                  {CATEGORIES.map(c => <option key={c} value={c} className="font-medium">{c}</option>)}
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,7 +247,7 @@ const BookFormModal: React.FC<BookFormModalProps> = ({ onClose, onSubmit, onBulk
               </div>
             </div>
 
-            {/* BUTTON ACTIONS */}
+            {/* BUTTON */}
             <div className="md:col-span-2 pt-4 flex gap-4">
               <button type="submit" className="flex-1 py-3.5 bg-slate-900 hover:bg-slate-800 transition-colors text-white rounded-xl font-bold text-xs tracking-wider uppercase shadow-lg shadow-slate-900/10 active:scale-[0.98]">
                 {initialData ? "Simpan Perubahan" : "Simpan Buku"}

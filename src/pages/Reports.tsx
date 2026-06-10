@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import jsPDF from "jsPDF";
+import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import apiClient from "../apiClient";
 
 const months = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
 ];
 
 const formatReportDate = (dateStr: any) => {
@@ -33,245 +33,231 @@ export default function Reports() {
     const fetchReport = async () => {
       setLoading(true);
       setError(null);
-      
       try {
         const monthParam = month === "all" ? "all" : month;
-        
-        console.log("=== LAPORAN PDF DEBUG ===");
-        console.log("📤 Mengirim request dengan parameter:", {
-          type,
-          month: monthParam,
-          year
-        });
-        
         const response = await apiClient.get("/reports", {
-          params: { type, month: monthParam, year, _t: Date.now() }
+          params: { type, month: monthParam, year, _t: Date.now() },
         });
-        
-        console.log("📥 Response dari server:", response.data);
-        console.log("📊 Jumlah data:", response.data?.length || 0);
-        
-        if (response.data && response.data.length > 0) {
-          console.log("🔍 Struktur data (item pertama):", response.data[0]);
-          console.log("🏷️ Field-field yang ada:", Object.keys(response.data[0]));
-        }
-        
         setReportData(response.data || []);
-        setError(null);
-        
       } catch (err: any) {
-        console.error("❌ ERROR:", err.message);
-        console.error("Status:", err.response?.status);
-        console.error("Data error:", err.response?.data);
-        
         setError(err.response?.data?.error || "Gagal memuat laporan");
         setReportData([]);
       } finally {
         setLoading(false);
       }
     };
-    
     fetchReport();
   }, [type, month, year]);
 
   const downloadPDF = () => {
-    console.log("📄 Generate PDF dengan data:", reportData.length, "items");
-    
     if (reportData.length === 0) {
       alert("⚠️ Tidak ada data untuk di-download!");
       return;
     }
 
-    const doc = new jsPDF("p", "mm", "a4");
+    // LANDSCAPE untuk muat semua kolom
+    const doc = new jsPDF("l", "mm", "a4");
     const pageWidth = doc.internal.pageSize.width;
     const isTransaksi = type === "transaksi";
-    
-    /* 1. HEADER PDF */
+
+    /* HEADER */
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
     doc.text("DARUNNAJAH", 20, 20);
-    
+
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.text("LIBRARY MANAGEMENT SYSTEM", 20, 27);
-    
+
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(37, 99, 235); 
+    doc.setTextColor(37, 99, 235);
     doc.setFontSize(11);
-    doc.text(isTransaksi ? "LAPORAN TRANSAKSI" : "LAPORAN KUNJUNGAN", pageWidth - 20, 20, { align: "right" });
-    
+    doc.text(
+      isTransaksi ? "LAPORAN TRANSAKSI" : "LAPORAN KUNJUNGAN",
+      pageWidth - 20,
+      20,
+      { align: "right" }
+    );
+
     doc.setTextColor(100);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.text(month === "all" ? `Tahun ${year}` : `${months[typeof month === 'number' ? month - 1 : 0]} ${year}`, pageWidth - 20, 27, { align: "right" });
-    
+    doc.text(
+      month === "all"
+        ? `Tahun ${year}`
+        : `${months[typeof month === "number" ? month - 1 : 0]} ${year}`,
+      pageWidth - 20,
+      27,
+      { align: "right" }
+    );
+
     doc.setDrawColor(0);
     doc.line(20, 33, pageWidth - 20, 33);
-    
-    /* 2. KONFIGURASI KOLOM & TABEL */
+
+    /* HEADER TABEL & KOLOM */
     const tableHeaders = isTransaksi
-      ? [["NO", "ID", "TGL", "NAMA", "ROLE", "BUKU", "QTY", "STATUS"]]
-      : [["NO", "ID", "TGL", "NAMA", "ROLE", "KELAS", "TUJUAN"]];
-    
-    const columnStyles = isTransaksi
+      ? [["NO", "TGL", "ID", "NAMA", "ROLE", "JUDUL BUKU", "KODE BUKU", "QTY", "STATUS"]]
+      : [["NO", "TANGGAL", "ID ANGGOTA", "NAMA", "ROLE", "KELAS", "TUJUAN"]];
+
+    const columnStyles: any = isTransaksi
       ? {
           0: { cellWidth: 12, halign: "center" },
-          1: { cellWidth: 17, halign: "center" },
-          2: { cellWidth: 20, halign: "center" },
-          3: { cellWidth: 40, halign: "left" },
-          4: { cellWidth: 16, halign: "center" },
-          5: { cellWidth: 40, halign: "left" },
-          6: { cellWidth: 12, halign: "center" },
-          7: { cellWidth: 29, halign: "center" }
+          1: { cellWidth: 22, halign: "center" },
+          2: { cellWidth: 22, halign: "center" },
+          3: { cellWidth: 55, halign: "left" },
+          4: { cellWidth: 18, halign: "center" },
+          5: { cellWidth: 60, halign: "left" },   // Judul Buku
+          6: { cellWidth: 28, halign: "center" },  // Kode Buku
+          7: { cellWidth: 12, halign: "center" },
+          8: { cellWidth: 38, halign: "center" },
         }
       : {
-          0: { cellWidth: 12, halign: "center" },
-          1: { cellWidth: 17, halign: "center" },
-          2: { cellWidth: 20, halign: "center" },
-          3: { cellWidth: 32, halign: "left" },
-          4: { cellWidth: 16, halign: "center" },
-          5: { cellWidth: 16, halign: "center" },
-          6: { cellWidth: 58, halign: "left" }
+          0: { cellWidth: 15, halign: "center" },
+          1: { cellWidth: 30, halign: "center" },
+          2: { cellWidth: 35, halign: "center" },
+          3: { cellWidth: 87, halign: "left" },
+          4: { cellWidth: 25, halign: "center" },
+          5: { cellWidth: 25, halign: "center" },
+          6: { cellWidth: 50, halign: "left" },
         };
-    
+console.log("ISI DATA KUNJUNGAN:", reportData[0]);
+    /* DATA TABEL */
     const tableBody = reportData.map((item, index) => {
       const tgl = formatReportDate(item.date || item.borrowDate || item.tanggal);
-      const nama = String(item.name || item.nama || item.studentName || "-").substring(0, 28).toUpperCase();
-      
+      const nama = String(item.name || item.nama || item.studentName || "-")
+        .substring(0, 30)
+        .toUpperCase();
+
       if (isTransaksi) {
         return [
           String(index + 1),
-          item.memberId || "-",
           tgl,
+          item.memberId || "-",
           nama,
           item.role || "-",
-          String(item.bookTitle || item.activity || "-").substring(0, 30),
+          String(item.bookTitle || item.activity || "-").substring(0, 38),
+          item.bookCode || "-",
           item.quantity || "1",
-          String(item.status || "-").toUpperCase()
+          String(item.status || "-").toUpperCase(),
         ];
       }
       return [
         String(index + 1),
-        item.memberId || "-",
         tgl,
+        item.memberId || "-",
         nama,
-        item.role || "-",
+        String(item.chosing || "-").toUpperCase(),
         item.kelas || item.class || "-",
-        String(item.tujuan || item.purpose || "-").substring(0, 40)
+        String(item.tujuan || item.purpose || "-").substring(0, 55),
       ];
     });
-    
-    autoTable(doc, {
+
+autoTable(doc, {
       startY: 40,
-      margin: { left: 12, right: 12 },
+      // 1. Mengubah margin agar presisi tengah & mengaktifkan auto-center
+      margin: { left: 15, right: 15 },
+      tableWidth: "wrap", // Membungkus tabel sesuai ukuran total kolomStyles
+      halign: "center",   // Membuat posisi tabel otomatis rata tengah kertas
       head: tableHeaders,
       body: tableBody,
-      styles: { 
+      styles: {
         fontSize: 8,
         cellPadding: 3,
-        valign: 'middle', 
-        halign: 'left',
-        overflow: 'hidden',
-        textColor: [0, 0, 0]
+        valign: "middle",
+        overflow: "hidden",
+        textColor: [0, 0, 0],
       },
-      headStyles: { 
-        fillColor: [15, 23, 42], 
-        textColor: [255, 255, 255], 
-        halign: 'center',
-        valign: 'middle',
-        fontStyle: 'bold',
+      headStyles: {
+        fillColor: [15, 23, 42],
+        textColor: [255, 255, 255],
+        halign: "center",
+        fontStyle: "bold",
         fontSize: 8,
-        minCellHeight: 8
       },
       bodyStyles: {
         lineColor: [200, 200, 200],
-        lineWidth: 0.3
+        lineWidth: 0.3,
       },
-      columnStyles: columnStyles,
+      columnStyles,
       alternateRowStyles: {
-        fillColor: [248, 248, 248]
+        fillColor: [248, 248, 248],
       },
       didParseCell: (data) => {
-        if (data.section === "head") {
-          data.cell.styles.fillColor = [15, 23, 42];
-          data.cell.styles.textColor = [255, 255, 255];
-          data.cell.styles.overflow = 'hidden';
-        }
-        
-        if (isTransaksi && data.section === "body" && data.column.index === 7) {
+        // Warna status di kolom terakhir transaksi (index 8)
+        if (isTransaksi && data.section === "body" && data.column.index === 8) {
           const s = String(data.cell.raw || "").toUpperCase();
-          if (s.includes("TEPAT") || s.includes("KEMBALI")) {
+          if (s.includes("KEMBALI")) {
             data.cell.styles.textColor = [22, 163, 74];
-            data.cell.styles.fontStyle = 'bold';
-          } else if (s.includes("TERLAMBAT") || s.includes("TELAT")) {
+            data.cell.styles.fontStyle = "bold";
+          } else if (s.includes("TERLAMBAT")) {
             data.cell.styles.textColor = [220, 38, 38];
-            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fontStyle = "bold";
           } else if (s.includes("PINJAM")) {
             data.cell.styles.textColor = [217, 119, 6];
-            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.fontStyle = "bold";
           }
         }
-      }
+      },
     });
-    
+
     const finalY = (doc as any).lastAutoTable.finalY || 40;
     doc.setFontSize(8);
     doc.setTextColor(100);
-    doc.text(`Ditemukan ${reportData.length} Data`, 12, finalY + 8);
-    
+    doc.text(`Ditemukan ${reportData.length} Data`, 15, finalY + 8);
+
     doc.setFontSize(7);
     doc.setTextColor(150);
-    doc.text(`Cetak: ${new Date().toLocaleDateString('id-ID')}`, pageWidth - 12, finalY + 8, { align: "right" });
-    
+    doc.text(
+      `Cetak: ${new Date().toLocaleDateString("id-ID")}`,
+      pageWidth - 15,
+      finalY + 8,
+      { align: "right" }
+    );
+
     doc.save(`Laporan_${type}_${year}.pdf`);
-    console.log("✅ PDF berhasil di-download!");
   };
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-4">Laporan PDF</h1>
-      
+      <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight mb-4">
+        Laporan PDF
+      </h1>
+
       <div className="flex gap-3 flex-wrap bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-4">
-        <select 
-          value={type} 
-          onChange={e => {
-            const newType = e.target.value as any;
-            console.log("🔄 Tipe diubah ke:", newType);
-            setType(newType);
-          }} 
+        <select
+          value={type}
+          onChange={(e) => setType(e.target.value as any)}
           className="px-4 py-2 rounded-xl border text-sm font-medium bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none"
         >
           <option value="transaksi">Riwayat Transaksi</option>
           <option value="kunjungan">Riwayat Kunjungan</option>
         </select>
-        
-        <select 
-          value={month} 
-          onChange={e => {
-            const newMonth = e.target.value === "all" ? "all" : Number(e.target.value);
-            console.log("🔄 Bulan diubah ke:", newMonth);
-            setMonth(newMonth as any);
-          }} 
+
+        <select
+          value={month}
+          onChange={(e) =>
+            setMonth(e.target.value === "all" ? "all" : Number(e.target.value))
+          }
           className="px-4 py-2 rounded-xl border text-sm font-medium bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none"
         >
           <option value="all">One Year Report</option>
-          {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+          {months.map((m, i) => (
+            <option key={i} value={i + 1}>{m}</option>
+          ))}
         </select>
-        
-        <select 
-          value={year} 
-          onChange={e => {
-            const newYear = Number(e.target.value);
-            console.log("🔄 Tahun diubah ke:", newYear);
-            setYear(newYear);
-          }} 
+
+        <select
+          value={year}
+          onChange={(e) => setYear(Number(e.target.value))}
           className="px-4 py-2 rounded-xl border text-sm font-medium bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none"
         >
-          {[2024, 2025, 2026, 2027].map(y => <option key={y}>{y}</option>)}
+          {[2024, 2025, 2026, 2027].map((y) => (
+            <option key={y}>{y}</option>
+          ))}
         </select>
-        
-        <button 
-          onClick={downloadPDF} 
+
+        <button
+          onClick={downloadPDF}
           disabled={loading}
           className="px-6 py-2 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -279,19 +265,18 @@ export default function Reports() {
         </button>
       </div>
 
-      {/* STATUS MESSAGE */}
       {loading && (
         <div className="text-sm font-semibold text-blue-600 bg-blue-50 inline-block px-4 py-2 rounded-full mb-4">
           ⏳ Loading data...
         </div>
       )}
-      
+
       {error && (
         <div className="text-sm font-semibold text-red-600 bg-red-50 inline-block px-4 py-2 rounded-full mb-4">
           ❌ {error}
         </div>
       )}
-      
+
       <div className="text-xs font-bold text-slate-500 uppercase tracking-widest bg-slate-100 inline-block px-2 rounded-lg">
         📊 Ditemukan {reportData.length} Data
       </div>

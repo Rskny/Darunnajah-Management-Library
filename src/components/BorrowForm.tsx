@@ -2,29 +2,31 @@ import React, { useState, useEffect } from "react";
 import { CLASS_CODES, MAJORS } from "../constants/data";
 import { useHistory } from "../context/HistoryContext";
 import apiClient from "../apiClient";
-import Select from "react-select"; 
+import Select from "react-select";
 
 const GENDERS = ["Laki-laki", "Perempuan"];
 
 interface Props {
   bookTitle: string;
+  bookCode?: string;
   onClose: () => void;
+  onSubmit?: (data: any) => void;
 }
 
-const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
+const BorrowForm: React.FC<Props> = ({ bookTitle, bookCode, onClose }) => {
   const { addHistory } = useHistory();
 
   const [memberOptions, setMemberOptions] = useState([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(true);
 
   const [formData, setFormData] = useState({
-    memberId: "", 
+    memberId: "",
     name: "",
     role: "Siswa",
     class: "-",
     major: "-",
     gender: GENDERS[0],
-    quantity: 1
+    quantity: 1,
   });
 
   const [days, setDays] = useState(7);
@@ -35,8 +37,8 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
         const res = await apiClient.get("/members/selection");
         const formatted = res.data.map((m: any) => ({
           value: m.id,
-          label: m.nama, // REVISI FOTO 1: Hanya menampilkan nama saja di atas dropdown
-          raw: m 
+          label: m.nama,
+          raw: m,
         }));
         setMemberOptions(formatted);
       } catch (err) {
@@ -53,12 +55,12 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
       const { id, nis, nama, status, kelas, jurusan, gender } = selected.raw;
       setFormData({
         ...formData,
-        memberId: nis || String(id), 
+        memberId: nis || String(id),
         name: nama,
         role: status,
-        class: kelas,
-        major: jurusan,
-        gender: gender || GENDERS[0]
+        class: kelas || "-",
+        major: jurusan || "-",
+        gender: gender || GENDERS[0], // Sekarang akan dapat gender dari API
       });
     } else {
       setFormData({
@@ -68,13 +70,13 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
         role: "Siswa",
         class: "-",
         major: "-",
-        gender: GENDERS[0]
+        gender: GENDERS[0],
       });
     }
   };
 
   const handleChange = (field: string, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -85,7 +87,7 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
     }
 
     try {
-      const booksRes = await apiClient.get('/books');
+      const booksRes = await apiClient.get("/books");
       const foundBook = booksRes.data.find((b: any) => b.title === bookTitle);
 
       if (!foundBook) {
@@ -94,7 +96,7 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
       }
 
       if (formData.quantity > foundBook.stock) {
-        alert(`Request ditolak! Anda meminjam ${formData.quantity} buku, tapi stok yang tersedia hanya ${foundBook.stock}.`);
+        alert(`Stok tersedia hanya ${foundBook.stock}.`);
         return;
       }
 
@@ -103,7 +105,7 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
       due.setDate(today.getDate() + days);
 
       await apiClient.post("/transactions", {
-        memberId: formData.memberId, 
+        memberId: formData.memberId,
         bookId: foundBook.id,
         studentName: formData.name,
         role: formData.role.toLowerCase(),
@@ -112,8 +114,8 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
         gender: formData.gender,
         quantity: formData.quantity,
         status: "Dipinjam",
-        borrowDate: today.toISOString().split('T')[0],
-        dueDate: due.toISOString().split('T')[0]
+        borrowDate: today.toISOString().split("T")[0],
+        dueDate: due.toISOString().split("T")[0],
       });
 
       addHistory({
@@ -123,14 +125,13 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
         activity: `Meminjam ${bookTitle}`,
         status: "Meminjam",
         category: "transaksi",
-        description: `ID Anggota: ${formData.memberId}`
+        description: `ID Anggota: ${formData.memberId}`,
       });
 
       window.dispatchEvent(new Event("transactionsUpdated"));
       window.dispatchEvent(new Event("booksUpdated"));
       onClose();
       window.location.reload();
-
     } catch (err) {
       console.error(err);
       alert("Gagal memproses peminjaman buku!");
@@ -144,19 +145,34 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
         {/* HEADER */}
         <div className="p-6 border-b flex justify-between items-center bg-slate-50/30">
           <h3 className="text-2xl font-bold text-slate-800">Peminjaman Buku</h3>
-          <button onClick={() => { onClose(); window.location.reload(); }} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full">✕</button>
+          <button
+            onClick={() => { onClose(); window.location.reload(); }}
+            className="p-2 text-slate-400 hover:bg-slate-100 rounded-full"
+          >
+            ✕
+          </button>
         </div>
 
         {/* BODY */}
         <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-          <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-1">Buku Dipilih</p>
+
+          {/* INFO BUKU — kode di atas judul */}
+          <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 space-y-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400">
+              Kode Buku
+            </p>
+            <p className="font-mono font-bold text-blue-600 text-sm">
+              {bookCode || "-"}
+            </p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400 mt-2">
+              Buku Dipilih
+            </p>
             <h4 className="font-bold text-blue-800">{bookTitle}</h4>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            
-            {/* SEARCHABLE DROPDOWN NAMA */}
+
+            {/* NAMA PEMINJAM */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold uppercase text-slate-500">
                 Nama Peminjam <span className="text-red-500">*</span>
@@ -171,22 +187,22 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
                 styles={{
                   control: (base) => ({
                     ...base,
-                    borderRadius: '0.75rem',
-                    padding: '3px',
-                    border: 'none',
-                    backgroundColor: '#f1f5f9', 
+                    borderRadius: "0.75rem",
+                    padding: "3px",
+                    border: "none",
+                    backgroundColor: "#f1f5f9",
                   }),
                 }}
               />
             </div>
 
-            {/* REVISI LABEL: ID ANGGOTA (OTOMATIS) */}
+            {/* ID ANGGOTA */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold uppercase text-slate-500">ID Anggota</label>
-              <input 
-                readOnly 
-                value={formData.memberId || "Belum memilih nama"} 
-                className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed text-slate-600" 
+              <input
+                readOnly
+                value={formData.memberId || "Belum memilih nama"}
+                className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed text-slate-600"
               />
             </div>
 
@@ -209,35 +225,54 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold uppercase text-slate-500">Kelas</label>
-                <input readOnly value={formData.class} className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed" />
+                <input
+                  readOnly
+                  value={formData.class}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed"
+                />
               </div>
               <div>
                 <label className="text-xs font-bold uppercase text-slate-500">Jurusan</label>
-                <input readOnly value={formData.major} className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed" />
+                <input
+                  readOnly
+                  value={formData.major}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed"
+                />
               </div>
             </div>
 
+            {/* ROLE + GENDER */}
             <div className="grid grid-cols-2 gap-4">
-               <div>
-                  <label className="text-xs font-bold uppercase text-slate-500">Role</label>
-                  <input readOnly value={formData.role} className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed" />
-               </div>
-               <div>
-                  <label className="text-xs font-bold uppercase text-slate-500">Gender</label>
-                  <input readOnly value={formData.gender} className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed" />
-               </div>
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-500">Role</label>
+                <input
+                  readOnly
+                  value={formData.role}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold uppercase text-slate-500">Gender</label>
+                <input
+                  readOnly
+                  value={formData.gender}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-200 opacity-70 font-bold border-none outline-none cursor-not-allowed"
+                />
+              </div>
             </div>
 
             {/* DURASI */}
             <div>
               <label className="text-xs font-bold uppercase text-slate-500">Durasi Pinjam</label>
               <div className="flex space-x-2 mt-1">
-                {[3, 7, 14].map(d => (
+                {[3, 7, 14].map((d) => (
                   <button
                     key={d}
                     type="button"
                     onClick={() => setDays(d)}
-                    className={`flex-1 py-2 rounded-xl font-bold text-xs transition ${days === d ? "bg-slate-800 text-white shadow" : "bg-slate-50 text-slate-400 border"}`}
+                    className={`flex-1 py-2 rounded-xl font-bold text-xs transition ${
+                      days === d ? "bg-slate-800 text-white shadow" : "bg-slate-50 text-slate-400 border"
+                    }`}
                   >
                     {d} Hari
                   </button>
@@ -245,7 +280,10 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, onClose }) => {
               </div>
             </div>
 
-            <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold mt-4 hover:bg-blue-700 transition active:scale-95 shadow-lg shadow-blue-200">
+            <button
+              type="submit"
+              className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold mt-4 hover:bg-blue-700 transition active:scale-95 shadow-lg shadow-blue-200"
+            >
               Konfirmasi Peminjaman
             </button>
           </form>
