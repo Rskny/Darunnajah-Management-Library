@@ -122,7 +122,7 @@ const Books: React.FC = () => {
                   showSelect ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600"
                 }`}
               >
-                {showSelect ? "Cancel" : "Select"}
+                {showSelect ? "Cancel" : "Delete"}
               </button>
 
               {selected.length > 0 && (

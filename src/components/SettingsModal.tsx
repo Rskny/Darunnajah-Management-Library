@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
+import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { Icons } from "../constants/icons";
 
 const SettingsModal = ({ onClose }: { onClose: () => void }) => {
-  const { user } = useAuth(); 
+  const { user, updateUser } = useAuth();
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeSection, setActiveSection] = useState<"profile" | "security" | "backup">("profile");
   const [showNewPass, setShowNewPass] = useState(false);
@@ -25,11 +26,9 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
   const API_BASE = "http://localhost:9602/api/settings";
   const DASHBOARD_BLUE = "#3b5998";
 
-  // Ambil token otentikasi
   const token = localStorage.getItem("token");
   const config = { headers: { Authorization: `Bearer ${token}` } };
 
-  // Set data awal form dari user context saat modal terbuka
   useEffect(() => {
     if (user) {
       setFormData((prev) => ({
@@ -57,51 +56,56 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
     if (user) fetchData();
   }, [activeSection, user]);
 
-  // Handler perubahan input text global
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Fungsi simpan perubahan (Profil & Security)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    loading(true);
+    setLoading(true);
     try {
       if (activeSection === "profile") {
         await axios.put(`${API_BASE}/profile`, {
           name: formData.name,
           username: formData.username,
-          email: formData.email
+          email: formData.email,
         }, config);
-        alert("Profil berhasil diperbarui! Silakan refresh halaman untuk memuat ulang data terpusat.");
+
+        // Update context & localStorage supaya langsung berubah tanpa refresh
+        await updateUser({
+          name: formData.name,
+          username: formData.username,
+          email: formData.email,
+        });
+
+        toast.success("Perubahan profil berhasil disimpan!");
       } else if (activeSection === "security") {
         if (formData.newPassword !== formData.confirmPassword) {
-          alert("Konfirmasi password baru tidak cocok!");
+          toast.error("Konfirmasi password baru tidak cocok!");
           setLoading(false);
           return;
         }
         const res = await axios.post(`${API_BASE}/change-password-request`, {
           oldPassword: formData.oldPassword,
-          newPassword: formData.newPassword
+          newPassword: formData.newPassword,
         }, config);
-        alert(res.data.message);
-        setFormData(prev => ({ ...prev, oldPassword: "", newPassword: "", confirmPassword: "" }));
+        toast.success(res.data.message);
+        setFormData((prev) => ({ ...prev, oldPassword: "", newPassword: "", confirmPassword: "" }));
       }
     } catch (err: any) {
-      alert(err.response?.data?.error || "Terjadi kesalahan proses");
+      toast.error(err.response?.data?.error || "Terjadi kesalahan proses");
     } finally {
       setLoading(false);
     }
   };
 
-  // Jalankan backup manual
   const handleBackup = async () => {
     try {
       const res = await axios.post(`${API_BASE}/backup`, {}, config);
       setLastBackup(new Date(res.data.time).toLocaleString("id-ID"));
-      alert("Backup database berhasil disimulasikan!");
+      toast.success("Backup database berhasil disimulasikan!");
     } catch (err) {
-      alert("Gagal mencadangkan database");
+      toast.error("Gagal mencadangkan database");
     }
   };
 
@@ -116,7 +120,7 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
   return createPortal(
     <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex justify-center items-center p-4">
       <div ref={modalRef} className="w-full max-w-4xl h-[490px] rounded-[40px] overflow-hidden flex shadow-2xl bg-white border border-slate-100">
-        
+
         {/* SIDEBAR */}
         <div className="w-72 bg-[#f8fafc] border-r p-6 pt-8 flex flex-col shrink-0">
           <div className="mb-6">
@@ -127,9 +131,9 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <Menu icon={<Icons.Profile />} text="Profil" id="profile" active={activeSection} set={setActiveSection} color={DASHBOARD_BLUE}/>
-            <Menu icon={<Icons.Security />} text="Keamanan" id="security" active={activeSection} set={setActiveSection} color={DASHBOARD_BLUE}/>
-            <Menu icon={<Icons.Backup />} text="Backup" id="backup" active={activeSection} set={setActiveSection} color={DASHBOARD_BLUE}/>
+            <Menu icon={<Icons.Profile />} text="Profil" id="profile" active={activeSection} set={setActiveSection} color={DASHBOARD_BLUE} />
+            <Menu icon={<Icons.Security />} text="Keamanan" id="security" active={activeSection} set={setActiveSection} color={DASHBOARD_BLUE} />
+            <Menu icon={<Icons.Backup />} text="Backup" id="backup" active={activeSection} set={setActiveSection} color={DASHBOARD_BLUE} />
           </div>
 
           <button onClick={onClose} className="mt-auto text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-all">
@@ -159,25 +163,24 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {activeSection === "profile" && (
                     <>
-                      <Input label="Username" value={formData.username} onChange={(v: string) => handleInputChange("username", v)} color={DASHBOARD_BLUE}/>
-                      <Input label="Nama Lengkap" value={formData.name} onChange={(v: string) => handleInputChange("name", v)} color={DASHBOARD_BLUE}/>
-                      <Input label="Alamat Email" value={formData.email} onChange={(v: string) => handleInputChange("email", v)} color={DASHBOARD_BLUE}/>
+                      <Input label="Username" value={formData.username} onChange={(v: string) => handleInputChange("username", v)} color={DASHBOARD_BLUE} />
+                      <Input label="Nama Lengkap" value={formData.name} onChange={(v: string) => handleInputChange("name", v)} color={DASHBOARD_BLUE} />
+                      <Input label="Alamat Email" value={formData.email} onChange={(v: string) => handleInputChange("email", v)} color={DASHBOARD_BLUE} />
                     </>
                   )}
                   {activeSection === "security" && (
                     <>
-                      <Input label="Password Lama" type="password" value={formData.oldPassword} onChange={(v: string) => handleInputChange("oldPassword", v)} color={DASHBOARD_BLUE}/>
-                      <PasswordInput label="Password Baru" value={formData.newPassword} onChange={(v: string) => handleInputChange("newPassword", v)} show={showNewPass} toggle={() => setShowNewPass(!showNewPass)} color={DASHBOARD_BLUE}/>
-                      <PasswordInput label="Konfirmasi Password" value={formData.confirmPassword} onChange={(v: string) => handleInputChange("confirmPassword", v)} show={showConfirmPass} toggle={() => setShowConfirmPass(!showConfirmPass)} color={DASHBOARD_BLUE}/>
-                      
-                      {/* Box Info Notifikasi Email */}
+                      <Input label="Password Lama" type="password" value={formData.oldPassword} onChange={(v: string) => handleInputChange("oldPassword", v)} color={DASHBOARD_BLUE} />
+                      <PasswordInput label="Password Baru" value={formData.newPassword} onChange={(v: string) => handleInputChange("newPassword", v)} show={showNewPass} toggle={() => setShowNewPass(!showNewPass)} color={DASHBOARD_BLUE} />
+                      <PasswordInput label="Konfirmasi Password" value={formData.confirmPassword} onChange={(v: string) => handleInputChange("confirmPassword", v)} show={showConfirmPass} toggle={() => setShowConfirmPass(!showConfirmPass)} color={DASHBOARD_BLUE} />
+
                       <div className="flex gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100 text-[11px] leading-relaxed text-slate-500 font-medium mt-1">
                         <span className="text-sm select-none">🔒</span>
                         <span><b>Catatan Keamanan:</b> Demi menjaga privasi akun, setiap riwayat perubahan kata sandi akan otomatis diinformasikan ke alamat email terdaftar Anda.</span>
                       </div>
                     </>
                   )}
-                  <SaveButton color={DASHBOARD_BLUE} loading={loading}/>
+                  <SaveButton color={DASHBOARD_BLUE} loading={loading} />
                 </form>
               )}
 
@@ -203,9 +206,9 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
 
 /* --- SUB COMPONENTS --- */
 const Menu = ({ icon, text, id, active, set, color }: any) => (
-  <button 
+  <button
     type="button"
-    onClick={() => set(id)} 
+    onClick={() => set(id)}
     className={`flex items-center gap-4 w-full px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all duration-300 ${
       active === id ? `bg-white shadow-md shadow-slate-200 translate-x-2` : "text-slate-400 hover:text-slate-600"
     }`}
@@ -219,9 +222,9 @@ const Menu = ({ icon, text, id, active, set, color }: any) => (
 const Input = ({ label, value, onChange, type = "text", color }: any) => (
   <div className="space-y-1.5">
     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
-    <input 
+    <input
       type={type}
-      value={value} 
+      value={value}
       onChange={(e) => onChange && onChange(e.target.value)}
       className="w-full px-5 py-3 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white outline-none transition-all font-bold text-slate-700 text-sm"
       style={{ borderLeft: `4px solid ${color}` }}
@@ -233,8 +236,8 @@ const PasswordInput = ({ label, value, onChange, show, toggle, color }: any) => 
   <div className="space-y-1.5">
     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
     <div className="relative">
-      <input 
-        type={show ? "text" : "password"} 
+      <input
+        type={show ? "text" : "password"}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-5 py-3 rounded-2xl bg-slate-50 border border-slate-100 focus:bg-white outline-none transition-all font-bold text-slate-700 text-sm"

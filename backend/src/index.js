@@ -19,6 +19,13 @@ const app = express();
 
 // Middleware Utama
 app.use(cors());
+// Sesudah
+app.use(cors({
+    origin: ['http://localhost:3000', 'http://localhost:5173'], // sesuaikan port frontend kamu
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
 app.use(express.json());
 
 // ==========================================

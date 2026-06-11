@@ -53,7 +53,6 @@ export default function DataAnggota() {
         setShowSelect(false);
     };
 
-    // FUNGSI UPDATE MEMBER
     const handleUpdateMember = async (id: string, data: Partial<Member>) => {
         try {
             await apiClient.put(`/members/${id}`, data);
@@ -81,120 +80,156 @@ export default function DataAnggota() {
         .slice(0, limit);
 
     return (
-        <div className="p-8 space-y-6">
+        <div className="p-8 h-screen w-full max-w-full flex flex-col overflow-hidden bg-slate-50">
 
             {/* HEADER */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex-shrink-0 mb-6">
                 <PageHeader
                     title="Data Anggota"
                     subtitle="Manajemen anggota perpustakaan"
                     onSortChange={setSort}
                     onLimitChange={setLimit}
                     right={
-                        <>
+                        <div className="flex items-center gap-2">
                             <button
                                 onClick={() => { setShowSelect(!showSelect); setSelected([]); }}
-                                className="px-4 py-2 bg-slate-200 rounded-xl text-xs font-bold"
+                                className={`px-6 py-2 rounded-xl text-xs font-bold transition-all ${
+                                    showSelect ? "bg-red-500 text-white" : "bg-slate-200 text-slate-700"
+                                }`}
                             >
-                                {showSelect ? "Cancel" : "Select"}
+                                {showSelect ? "Batal" : "Delete"}
                             </button>
-
-                            {showSelect && selected.length > 0 && (
-                                <button
-                                    onClick={deleteSelected}
-                                    className="px-4 py-2 bg-red-500 text-white rounded-xl text-xs font-bold"
-                                >
-                                    Hapus ({selected.length})
-                                </button>
-                            )}
 
                             <button
                                 onClick={() => { setEditMember(null); setOpen(true); }}
-                                className="px-6 py-2 bg-[#3F5EA8] text-white rounded-xl text-xs font-bold shadow"
+                                className="px-6 py-2 bg-[#3F5EA8] text-white rounded-xl text-xs font-bold shadow-md hover:bg-[#334e8c] transition-all"
                             >
                                 + Input Data
                             </button>
-                        </>
+                        </div>
                     }
                 />
             </div>
 
-            {/* TABLE */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-auto max-h-[600px]">
-                <table className="w-full text-sm">
-                    <thead className="bg-slate-100 text-xs uppercase text-slate-600 sticky top-0 z-10">
-                        <tr className="text-center">
-                            {showSelect && (
-                                <th className="p-4 w-10">
-                                    <input
-                                        type="checkbox"
-                                        checked={selected.length === sorted.length && sorted.length > 0}
-                                        onChange={toggleAll}
-                                    />
-                                </th>
-                            )}
-                            <th className="p-4 w-14">No</th>
-                            <th className="p-4 text-left w-24">ID</th>
-                            <th className="p-4 text-left">Nama</th>
-                            <th className="p-4">Status</th>
-                            <th className="p-4">Kelas</th>
-                            <th className="p-4">Jurusan</th>
-                            <th className="p-4">Gender</th>
-                            <th className="p-4 text-center">Aksi</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        {sorted.length === 0 ? (
+            {/* TABEL DENGAN VIEWPORT GULIR (SCROLLABLE) */}
+            <div className="flex-1 min-h-0 w-full relative">
+                <div className="absolute inset-0 overflow-auto border border-slate-200 rounded-3xl bg-white shadow-sm">
+                    
+                    {/* Mengunci lebar minimal tabel agar tidak menabrak / gepeng */}
+                    <table className="w-full text-sm border-collapse" style={{ minWidth: "1100px" }}>
+                        <thead className="sticky top-0 z-30 bg-slate-100 text-slate-600 text-xs uppercase border-b border-slate-200">
                             <tr>
-                                <td
-                                    colSpan={showSelect ? 9 : 8}
-                                    className="py-20 text-center text-slate-400 font-medium"
-                                >
-                                    Belum ada data anggota
-                                </td>
+                                {showSelect && (
+                                    <th className="px-6 py-5 w-16 text-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={selected.length === sorted.length && sorted.length > 0}
+                                            onChange={toggleAll}
+                                        />
+                                    </th>
+                                )}
+                                <th className="px-6 py-5 w-16 text-center">No</th>
+                                <th className="px-6 py-5 text-left w-32 whitespace-nowrap">ID Anggota</th>
+                                <th className="px-6 py-5 text-left w-72 whitespace-nowrap">Nama Lengkap</th>
+                                
+                                {/* KEMBALI KE STRUKTUR ANGGOTA ASLI */}
+                                <th className="px-6 py-5 text-center w-40 whitespace-nowrap">Status / Role</th>
+                                <th className="px-6 py-5 text-left w-44 whitespace-nowrap">Kelas</th>
+                                <th className="px-6 py-5 text-center w-48 whitespace-nowrap">Jurusan</th>
+                                
+                                <th className="px-6 py-5 text-center w-28 whitespace-nowrap">Aksi</th>
                             </tr>
-                        ) : (
-                            sorted.map((m, i) => (
-                                <tr key={i} className="border-t hover:bg-slate-50 text-center">
-                                    {showSelect && (
-                                        <td>
-                                            <input
-                                                type="checkbox"
-                                                checked={selected.includes(i)}
-                                                onChange={() => toggleSelect(i)}
-                                            />
-                                        </td>
-                                    )}
-                                    <td className="p-4 font-semibold text-slate-500">{i + 1}</td>
-                                    <td className="p-4 text-left font-bold text-slate-700 tracking-wider">{m.id}</td>
-                                    <td className="p-4 text-left font-medium text-slate-700">{m.nama}</td>
-                                    <td className="p-4 capitalize">{m.status}</td>
-                                    <td className="p-4">{m.kelas}</td>
-                                    <td className="p-4">{m.jurusan}</td>
-                                    <td className="p-4">{m.gender}</td>
+                        </thead>
 
-                                    {/* TOMBOL EDIT PENSIL */}
-                                    <td className="p-4">
-                                        <button
-                                            onClick={() => {
-                                                setEditMember(m);
-                                                setOpen(true);
-                                            }}
-                                            className="p-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 border border-amber-200 transition-all"
-                                            title="Edit Anggota"
-                                        >
-                                            <span className="text-xs">✎</span>
-                                        </button>
+                        <tbody className="divide-y divide-slate-100">
+                            {sorted.length === 0 ? (
+                                <tr>
+                                    <td
+                                        colSpan={showSelect ? 8 : 7}
+                                        className="py-20 text-center text-slate-400 font-medium"
+                                    >
+                                        Belum ada data anggota
                                     </td>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                            ) : (
+                                sorted.map((m, i) => (
+                                    <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                        {showSelect && (
+                                            <td className="px-6 py-4 text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selected.includes(i)}
+                                                    onChange={() => toggleSelect(i)}
+                                                />
+                                            </td>
+                                        )}
+                                        <td className="px-6 py-4 text-center text-slate-400 font-bold">{i + 1}</td>
+                                        <td className="px-6 py-4 text-left font-mono font-bold text-slate-800 tracking-wider">
+                                            {m.id}
+                                        </td>
+                                        <td className="px-6 py-4 text-left font-semibold text-slate-700">
+                                            {m.nama}
+                                        </td>
+                                        
+                                        {/* KONDISI BADGE UNTUK STATUS (TEACHER / STUDENT) */}
+                                        <td className="px-6 py-4 text-center whitespace-nowrap">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                                                m.status.toLowerCase() === 'teacher' || m.status.toLowerCase() === 'guru'
+                                                    ? 'bg-amber-100 text-amber-800' 
+                                                    : 'bg-blue-100 text-blue-800'
+                                            }`}>
+                                                {m.status}
+                                            </span>
+                                        </td>
+                                        
+                                        <td className="px-6 py-4 text-left text-slate-600 whitespace-nowrap">
+                                            {m.kelas}
+                                        </td>
+                                        
+                                        <td className="px-6 py-4 text-center whitespace-nowrap">
+                                            {m.jurusan && m.jurusan !== "-" ? (
+                                                <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wide">
+                                                    {m.jurusan}
+                                                </span>
+                                            ) : (
+                                                <span className="text-slate-400">-</span>
+                                            )}
+                                        </td>
+                                        
+                                        <td className="px-6 py-4 text-center">
+                                            <button
+                                                onClick={() => {
+                                                    setEditMember(m);
+                                                    setOpen(true);
+                                                }}
+                                                className="p-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 border border-amber-200 transition-all"
+                                                title="Edit Anggota"
+                                            >
+                                                <span className="text-xs">✎</span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+
+                </div>
             </div>
 
-            {/* MODAL — support mode tambah & edit */}
+            {/* BUTTON ACTION HAPUS MASSAL */}
+            {showSelect && selected.length > 0 && (
+                <div className="flex-shrink-0 pt-4 text-right">
+                    <button
+                        onClick={deleteSelected}
+                        className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl text-xs font-bold shadow-lg transition-colors"
+                    >
+                        Hapus {selected.length} Anggota Terpilih
+                    </button>
+                </div>
+            )}
+
+            {/* MODAL FORM */}
             {open && (
                 <MemberFormModal
                     onClose={() => {

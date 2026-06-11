@@ -88,7 +88,7 @@ const Riwayat: React.FC = () => {
             {/* HEADER */}
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex-shrink-0 mb-6">
                 <PageHeader
-                    title="Riwayat Peminjaman"
+                    title="Riwayat Transaksi"
                     subtitle="Histori transaksi buku"
                     onSortChange={setSort}
                     onLimitChange={setLimit}
@@ -100,7 +100,7 @@ const Riwayat: React.FC = () => {
                                     selectMode ? "bg-red-500 text-white" : "bg-slate-200 text-slate-700"
                                 }`}
                             >
-                                {selectMode ? "Batal" : "Pilih Data"}
+                                {selectMode ? "Batal" : "Delete"}
                             </button>
                         </div>
                     }
