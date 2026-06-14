@@ -13,6 +13,7 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
   const [showConfirmPass, setShowConfirmPass] = useState(false);
   const [lastBackup, setLastBackup] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -40,20 +41,23 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
     }
   }, [user]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (activeSection === "backup") {
-        try {
-          const res = await axios.get(`${API_BASE}/backup-info`, config);
-          if (res.data && res.data.last_backup) {
-            setLastBackup(new Date(res.data.last_backup).toLocaleString("id-ID"));
-          }
-        } catch (err) {
-          console.error(err);
-        }
+  const fetchBackupInfo = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/backup-info`, config);
+      if (res.data && res.data.last_backup) {
+        setLastBackup(new Date(res.data.last_backup).toLocaleString("id-ID"));
+      } else {
+        setLastBackup(null);
       }
-    };
-    if (user) fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    if (activeSection === "backup" && user) {
+      fetchBackupInfo();
+    }
   }, [activeSection, user]);
 
   const handleInputChange = (field: string, value: string) => {
@@ -71,7 +75,6 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
           email: formData.email,
         }, config);
 
-        // Update context & localStorage supaya langsung berubah tanpa refresh
         await updateUser({
           name: formData.name,
           username: formData.username,
@@ -100,12 +103,38 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
   };
 
   const handleBackup = async () => {
+    setLoading(true);
     try {
       const res = await axios.post(`${API_BASE}/backup`, {}, config);
       setLastBackup(new Date(res.data.time).toLocaleString("id-ID"));
-      toast.success("Backup database berhasil disimulasikan!");
+      toast.success("Backup database berhasil dibuat!");
     } catch (err) {
       toast.error("Gagal mencadangkan database");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    const confirmRestore = window.confirm(
+      "PERINGATAN SEBELUM RESTORE:\n\nTindakan ini akan MENGHAPUS seluruh data anggota saat ini dan menggantikannya dengan data cadangan terakhir.\n\nApakah Anda yakin ingin melanjutkan?"
+    );
+
+    if (!confirmRestore) return;
+
+    setRestoreLoading(true);
+    try {
+      const res = await axios.post(`${API_BASE}/restore`, {}, config);
+      toast.success(res.data.message, { duration: 5000 });
+      
+      // Opsional: Lakukan window.location.reload() agar halaman data anggota di belakang otomatis refresh memuat data lama
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || "Gagal melakukan pemulihan data");
+    } finally {
+      setRestoreLoading(false);
     }
   };
 
@@ -133,7 +162,7 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
           <div className="flex flex-col gap-2">
             <Menu icon={<Icons.Profile />} text="Profil" id="profile" active={activeSection} set={setActiveSection} color={DASHBOARD_BLUE} />
             <Menu icon={<Icons.Security />} text="Keamanan" id="security" active={activeSection} set={setActiveSection} color={DASHBOARD_BLUE} />
-            <Menu icon={<Icons.Backup />} text="Backup" id="backup" active={activeSection} set={setActiveSection} color={DASHBOARD_BLUE} />
+            <Menu icon={<Icons.Backup />} text="Backup & Restore" id="backup" active={activeSection} set={setActiveSection} color={DASHBOARD_BLUE} />
           </div>
 
           <button onClick={onClose} className="mt-auto text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-all">
@@ -190,9 +219,27 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Terakhir Backup</p>
                     <p className="text-base font-black text-slate-700">{lastBackup || "Belum ada data"}</p>
                   </div>
-                  <button onClick={handleBackup} className="w-full py-3.5 rounded-2xl bg-[#3b5998] text-white font-black text-sm uppercase tracking-widest shadow-lg active:scale-95 transition-all">
-                    Backup Sekarang
-                  </button>
+                  
+                  <div className="grid grid-cols-1 gap-3">
+                    <button 
+                      onClick={handleBackup} 
+                      disabled={loading || restoreLoading}
+                      className="w-full py-3.5 rounded-2xl bg-[#3b5998] text-white font-black text-sm uppercase tracking-widest shadow-lg active:scale-95 disabled:opacity-50 transition-all"
+                    >
+                      {loading ? "Memproses..." : "Backup Sekarang"}
+                    </button>
+
+                    {/* TOMBOL RESTORE RINGAN YANG BARU */}
+                    {lastBackup && (
+                      <button 
+                        onClick={handleRestore} 
+                        disabled={loading || restoreLoading}
+                        className="w-full py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-black text-sm uppercase tracking-widest shadow-md active:scale-95 disabled:opacity-50 transition-all"
+                      >
+                        {restoreLoading ? "Memulihkan..." : "Restore Data Terakhir"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

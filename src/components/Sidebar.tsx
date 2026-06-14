@@ -18,7 +18,7 @@ const Sidebar: React.FC = () => {
     { path: "/peminjaman", label: "Peminjaman", icon: ClipboardList },
     { path: "/riwayat-transaksi", label: "Riwayat Transaksi", icon: Clock },
     { path: "/riwayat-kunjungan", label: "Riwayat Kunjungan", icon: Clock },
-    { path: "/reports", label: "Laporan PDF", icon: FileText },
+    { path: "/reports", label: "Report & Export", icon: FileText },
   ];
 
   return (
