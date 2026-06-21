@@ -1,11 +1,12 @@
 import axios from 'axios';
 
-// Pastikan port ini sesuai dengan port backend kamu yang sedang berjalan
-const API_URL = 'http://localhost:9602/api';
+const API_URL = '/api'; // relatif, biar otomatis lewat proxy Vite
 
 const apiClient = axios.create({
     baseURL: API_URL,
 });
+
+// ... sisanya tetap sama
 
 // Request Interceptor: Menempelkan token JWT ke setiap request
 apiClient.interceptors.request.use((config) => {

@@ -47,7 +47,6 @@ function DownloadDropdown({
   return (
     <div className="relative inline-block" ref={ref}>
       <div className="flex rounded-full overflow-hidden shadow-lg shadow-slate-900/20">
-        {/* Tombol utama */}
         <button
           onClick={onDownloadPDF}
           disabled={loading}
@@ -55,9 +54,7 @@ function DownloadDropdown({
         >
           {loading ? "LOADING..." : `⬇ ${label}`}
         </button>
-        {/* Divider tipis */}
         <div className="w-px bg-blue-500 self-stretch" />
-        {/* Tombol arrow dropdown */}
         <button
           onClick={() => setOpen((v) => !v)}
           disabled={loading}
@@ -459,10 +456,10 @@ export default function Reports() {
       startY: 40,
       margin: { left: 15, right: 15 },
       tableWidth: "wrap",
-      halign: "center",
+      // PERBAIKAN: halign dipindahkan ke dalam objek styles
+      styles: { fontSize: 8, cellPadding: 3, valign: "middle", overflow: "hidden", textColor: [0, 0, 0], halign: "center" },
       head: tableHeaders,
       body: tableBody,
-      styles: { fontSize: 8, cellPadding: 3, valign: "middle", overflow: "hidden", textColor: [0, 0, 0] },
       headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], halign: "center", fontStyle: "bold", fontSize: 8 },
       bodyStyles: { lineColor: [200, 200, 200], lineWidth: 0.3 },
       columnStyles,
@@ -493,7 +490,6 @@ export default function Reports() {
         Laporan PDF
       </h1>
 
-      {/* ── Filter Laporan Transaksi / Kunjungan ── */}
       <div className="bg-slate-900 rounded-2xl p-5 shadow-lg shadow-slate-900/20">
         <div className="flex items-center gap-4 mb-4">
           <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-lg shrink-0">📋</div>
@@ -504,7 +500,6 @@ export default function Reports() {
         </div>
 
         <div className="flex gap-2.5 flex-wrap items-center">
-          {/* Select dengan chevron custom */}
           <div className="relative">
             <select
               value={type}
@@ -572,14 +567,12 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* ── Divider ── */}
       <div className="flex items-center gap-3 my-1">
         <div className="flex-1 h-px bg-slate-200" />
         <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Export Data Lainnya</span>
         <div className="flex-1 h-px bg-slate-200" />
       </div>
 
-      {/* ── Section Katalog Buku & Data Anggota ── */}
       <KatalogBukuDownload />
       <DataAnggotaDownload />
     </div>

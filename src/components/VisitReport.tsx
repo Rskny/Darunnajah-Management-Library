@@ -1,6 +1,5 @@
 import { useHistory } from "../context/HistoryContext";
-import { generatePDF } from "../utils/generatePDF";
-
+import { generateVisitPDF } from "../utils/generatePDF"; // Ganti import-nya
 
 interface Props {
   month: string;
@@ -9,12 +8,9 @@ interface Props {
 
 export default function VisitReport({ month, year }: Props) {
   const { history } = useHistory();
-  console.log("HISTORY:", history);
 
-
-  // ambil hanya data kunjungan
   const visits = history
-    .filter((item) => item.type === "Kunjungan")
+    .filter((item) => (item as any).type === "Kunjungan")
     .filter((item) => {
       const date = new Date(item.date);
       return (
@@ -24,13 +20,14 @@ export default function VisitReport({ month, year }: Props) {
     })
     .map((item, index) => {
       const date = new Date(item.date);
+      const visitItem = item as any; // Gunakan as any agar tidak error
 
       return {
         no: index + 1,
         tanggal: date.getDate().toString().padStart(2, "0"),
-        nama: item.name,
-        kelas: item.className,
-        keperluan: item.purpose,
+        nama: visitItem.name,
+        kelas: visitItem.className || "-", // Pastikan properti ini ada di data
+        keperluan: visitItem.purpose || "-", // Pastikan properti ini ada di data
       };
     });
 
@@ -43,17 +40,8 @@ export default function VisitReport({ month, year }: Props) {
         </p>
 
         <button
-          onClick={() => generateVisitPDF(month, year, visits)}
-          className="
-            px-5 py-2
-            rounded-full
-            bg-[#3F5EA8]
-            text-white
-            text-xs
-            font-bold
-            tracking-widest
-            hover:bg-[#364F8F]
-          "
+          onClick={() => generateVisitPDF(month, year, visits)} // Sekarang sudah sesuai
+          className="px-5 py-2 rounded-full bg-[#3F5EA8] text-white text-xs font-bold tracking-widest hover:bg-[#364F8F]"
         >
           ⬇ DOWNLOAD PDF
         </button>

@@ -16,6 +16,8 @@ export interface Book {
   coverImage?: string;
 }
 
+
+
 export interface Transaction {
   id: string;
   bookId?: string;
@@ -30,7 +32,7 @@ export interface Transaction {
 export interface Visit {
   id: number;
   name: string;
-  kelas: string;
+  class: string;
   chosing: string;
   purpose: string;
   date: string;
@@ -41,17 +43,24 @@ export interface HistoryItem {
   id?: string;
   name: string;
   date: string;
-
-  status?: "Siswa" | "Guru" | "Tepat Waktu" | "Terlambat";
-  activity?: "Peminjaman" | "Pengembalian" | "Membaca" | "Diskusi" | "Meminjam";
   type: "Transaksi" | "Kunjungan";
+  // Properti tambahan untuk mengatasi error di laporan
+  borrowDate?: string;
+  memberId?: string;
+  idAnggota?: string;
+  studentName?: string;
+  bookTitle?: string;
+  status?: string;
+  className?: string; // Untuk VisitReport
+  purpose?: string;   // Untuk VisitReport
+  category?: "transaksi" | "kunjungan";
 }
-
 
 export interface Member {
   id: string;
   name: string;
-  status: string;
+  nis: string;
+  role: string;
   class: string;
   joinDate: string;
   status: "active" | "inactive";

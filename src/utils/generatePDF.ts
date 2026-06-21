@@ -1,43 +1,55 @@
-// HistoryPDFButton.tsx
-import React from "react";
-import { useHistory } from "../context/HistoryContext";
-import { generatePDF, PDFRow } from "./generatePDF";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
-const HistoryPDFButton = () => {
-  const { history } = useHistory();
+// Interface untuk baris data laporan umum
+export interface PDFRow {
+  no: number;
+  tanggal: string;
+  nama: string;
+  buku?: string;
+  keperluan?: string;
+  status?: string;
+}
 
-  const handleDownloadPDF = () => {
-    if (history.length === 0) {
-      alert("Riwayat kosong!");
-      return;
-    }
+// Interface untuk data kunjungan
+export interface VisitRow {
+  no: number;
+  tanggal: string;
+  nama: string;
+  kelas: string;
+  keperluan: string;
+}
 
-    // Map HistoryItem ke PDFRow
-    const rows: PDFRow[] = history.map((item, index) => ({
-      no: index + 1,
-      tanggal: new Date(item.date).toLocaleString(),
-      nama: item.name,
-      // Untuk transaksi peminjaman / pengembalian isi 'buku', untuk kunjungan isi 'keperluan'
-      buku:
-        item.category === "transaksi"
-          ? item.activity // bisa diganti dengan judul buku jika ada
-          : undefined,
-      keperluan: item.category === "kunjungan" ? item.activity : undefined,
-      status: item.status ?? "-"
-    }));
+/**
+ * Fungsi untuk generate PDF Laporan Umum
+ */
+export const generatePDF = (title: string, month: string, year: string, rows: PDFRow[]) => {
+  const doc = new jsPDF();
+  doc.text(title, 14, 15);
+  doc.text(`Periode: ${month}/${year}`, 14, 25);
 
-    // Panggil generatePDF
-    generatePDF("Laporan Riwayat", "02", "2026", rows);
-  };
+  (doc as any).autoTable({
+    startY: 30,
+    head: [['No', 'Tanggal', 'Nama', 'Buku/Keperluan', 'Status']],
+    body: rows.map(r => [r.no, r.tanggal, r.nama, r.buku || r.keperluan || "-", r.status]),
+  });
 
-  return (
-    <button
-      onClick={handleDownloadPDF}
-      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-    >
-      Download Laporan PDF
-    </button>
-  );
+  doc.save(`${title}_${month}_${year}.pdf`);
 };
 
-export default HistoryPDFButton;
+/**
+ * Fungsi untuk generate PDF Laporan Kunjungan
+ */
+export const generateVisitPDF = (month: string, year: string, data: VisitRow[]) => {
+  const doc = new jsPDF();
+  doc.text("Laporan Kunjungan", 14, 15);
+  doc.text(`Periode: ${month}/${year}`, 14, 25);
+
+  (doc as any).autoTable({
+    startY: 30,
+    head: [['No', 'Tanggal', 'Nama', 'Kelas', 'Keperluan']],
+    body: data.map(v => [v.no, v.tanggal, v.nama, v.kelas, v.keperluan]),
+  });
+
+  doc.save(`Laporan_Kunjungan_${month}_${year}.pdf`);
+};

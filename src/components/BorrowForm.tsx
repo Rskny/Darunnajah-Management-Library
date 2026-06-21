@@ -119,11 +119,11 @@ const BorrowForm: React.FC<Props> = ({ bookTitle, bookCode, onClose }) => {
       });
 
       addHistory({
-        date: new Date().toISOString(),
+        date: new Date(),
         name: formData.name,
         role: formData.role.toLowerCase(),
         activity: `Meminjam ${bookTitle}`,
-        status: "Meminjam",
+        status: "meminjam",
         category: "transaksi",
         description: `ID Anggota: ${formData.memberId}`,
       });

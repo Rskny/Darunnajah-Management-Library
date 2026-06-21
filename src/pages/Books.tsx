@@ -6,6 +6,10 @@ import PageHeader from "../components/PageHeader";
 import { Book } from "../types";
 import { useLocation } from "react-router-dom";
 
+// IMPORT AOS DAN CSS ANIMASINYA
+import AOS from "aos";
+import "aos/dist/aos.css";
+
 const Books: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [showSelect, setShowSelect] = useState(false);
@@ -29,7 +33,13 @@ const Books: React.FC = () => {
     }
   };
 
-  useEffect(() => { fetchBooks(); }, []);
+  useEffect(() => {
+    fetchBooks();
+    AOS.init({
+      duration: 800,
+      once: true,
+    });
+  }, []);
 
   const handleAddBook = async (book: any) => {
     try {
@@ -84,7 +94,7 @@ const Books: React.FC = () => {
     setBooks((prev) =>
       prev.map((b) =>
         b.title === data.bookTitle
-          ? { ...b, stock: b.stock - 1, available: b.stock - 1 > 0 }
+          ? { ...b, stock: Number(b.stock) - 1, available: Number(b.stock) - 1 > 0 }
           : b
       )
     );
@@ -98,15 +108,14 @@ const Books: React.FC = () => {
       b.category?.toLowerCase().includes(q) ||
       (b.bookCode && b.bookCode.toLowerCase().includes(q))
     )
-    .sort((a, b) => (sort === "asc" ? a.id - b.id : b.id - a.id));
+    .sort((a, b) => (sort === "asc" ? Number(a.id) - Number(b.id) : Number(b.id) - Number(a.id)));
 
   const display = limit === 1000 ? sorted : sorted.slice(0, limit);
 
   return (
     <div className="p-8 h-screen w-full max-w-full flex flex-col overflow-hidden bg-slate-50">
 
-      {/* HEADER BOX - White container dengan PageHeader di dalamnya */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex-shrink-0 mb-6">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex-shrink-0 mb-6" data-aos="fade-down">
         <PageHeader
           title="Katalog Buku"
           subtitle="Manajemen koleksi perpustakaan"
@@ -145,8 +154,7 @@ const Books: React.FC = () => {
         />
       </div>
 
-      {/* CONTAINER TABEL - STRUKTUR DISAMAKAN DENGAN RIWAYAT PEMINJAMAN */}
-      <div className="flex-1 min-h-0 w-full relative">
+      <div className="flex-1 min-h-0 w-full relative" data-aos="fade-up" data-aos-delay="200">
         <div className="absolute inset-0 overflow-auto border border-slate-200 rounded-3xl bg-white shadow-sm">
           <table className="w-full text-left border-collapse" style={{ minWidth: "1300px" }}>
             <thead className="sticky top-0 z-30 bg-slate-100">
@@ -180,10 +188,7 @@ const Books: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {display.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={showSelect ? 11 : 10}
-                    className="py-20 text-center text-slate-400"
-                  >
+                  <td colSpan={showSelect ? 11 : 10} className="py-20 text-center text-slate-400">
                     Data Kosong
                   </td>
                 </tr>
@@ -213,70 +218,45 @@ const Books: React.FC = () => {
                     )}
 
                     <td className="px-6 py-4 text-xs font-bold text-slate-400 text-center">{i + 1}</td>
-
-                    {/* KODE BUKU */}
                     <td className="px-6 py-4">
                       <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-lg whitespace-nowrap">
                         {book.bookCode || "-"}
                       </span>
                     </td>
-
-                    {/* JUDUL BUKU */}
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
                         <span className="text-sm font-bold text-slate-700 leading-tight whitespace-nowrap">{book.title}</span>
                         <span className="text-[10px] text-slate-400 font-medium italic whitespace-nowrap">{book.author}</span>
                       </div>
                     </td>
-
-                    <td className="px-6 py-4 text-xs font-mono text-slate-500 whitespace-nowrap">
-                      {book.isbn || "-"}
-                    </td>
-
-                    <td className="px-6 py-4 text-xs text-slate-500 font-medium whitespace-nowrap">
-                      {book.publisher || "-"}
-                    </td>
-
+                    <td className="px-6 py-4 text-xs font-mono text-slate-500 whitespace-nowrap">{book.isbn || "-"}</td>
+                    <td className="px-6 py-4 text-xs text-slate-500 font-medium whitespace-nowrap">{book.publisher || "-"}</td>
                     <td className="px-6 py-4 text-center">
                       <span className="text-[9px] font-bold text-slate-500 uppercase bg-slate-100 px-2 py-0.5 rounded whitespace-nowrap">
                         {book.category}
                       </span>
                     </td>
-
                     <td className="px-6 py-4 text-center">
                       <span className="text-[10px] font-semibold text-slate-500 uppercase whitespace-nowrap">
                         {book.source || "Pembelian"}
                       </span>
                     </td>
-
-                    <td className="px-6 py-4 text-xs font-medium text-slate-500 text-center">
-                      {book.year}
-                    </td>
-
+                    <td className="px-6 py-4 text-xs font-medium text-slate-500 text-center">{book.year}</td>
                     <td className="px-6 py-4 text-center">
-                      <span className={`text-xs font-black ${book.stock > 0 ? "text-emerald-500" : "text-red-400"}`}>
+                      <span className={`text-xs font-black ${Number(book.stock) > 0 ? "text-emerald-500" : "text-red-400"}`}>
                         {book.stock}
                       </span>
                     </td>
-
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() => {
-                            setSelectedBook(book);
-                            setIsEditing(true);
-                          }}
+                          onClick={() => { setSelectedBook(book); setIsEditing(true); }}
                           className="p-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 border border-amber-200 transition-all"
-                          title="Edit Buku"
                         >
                           <span className="text-xs">✎</span>
                         </button>
-
                         <button
-                          onClick={() => {
-                            setSelectedBook(book);
-                            setIsEditing(false);
-                          }}
+                          onClick={() => { setSelectedBook(book); setIsEditing(false); }}
                           disabled={!book.available}
                           className={`w-20 py-1.5 text-[10px] rounded-lg font-bold transition-all ${
                             book.available
@@ -296,14 +276,9 @@ const Books: React.FC = () => {
         </div>
       </div>
 
-      {/* MODALS */}
       {(showForm || isEditing) && (
         <BookFormModal
-          onClose={() => {
-            setShowForm(false);
-            setIsEditing(false);
-            setSelectedBook(null);
-          }}
+          onClose={() => { setShowForm(false); setIsEditing(false); setSelectedBook(null); }}
           onSubmit={isEditing ? handleUpdateBook : handleAddBook}
           initialData={isEditing ? selectedBook : null}
           onBulkSubmit={handleBulkAddBooks}

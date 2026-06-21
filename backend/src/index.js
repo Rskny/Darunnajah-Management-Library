@@ -21,11 +21,14 @@ const app = express();
 app.use(cors());
 // Sesudah
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:5173'], // sesuaikan port frontend kamu
+    origin: function (origin, callback) {
+        callback(null, true);
+    },
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
+
 app.use(express.json());
 
 // ==========================================
@@ -74,6 +77,10 @@ app.use('/api/system', systemRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/settings', settingsRoutes);
+
+app.get('/', (req, res) => {
+    res.send('🚀 Server Backend Perpustakaan Darunnajah Berhasil Terhubung!');
+});
 
 // ==========================================
 // JALANKAN SERVER

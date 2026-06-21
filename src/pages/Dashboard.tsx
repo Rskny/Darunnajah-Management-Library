@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import apiClient from "../apiClient";
 import StatsOverview from "../components/StatsOverview";
-import TopUsersList from "../components/TopUsersList"; // <-- Import komponen baru
+import TopUsersList from "../components/TopUsersList";
 import {
   BarChart,
   Bar,
@@ -12,6 +12,10 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
+
+// IMPORT AOS DAN CSS ANIMASINYA
+import AOS from "aos";
+import "aos/dist/aos.css";
 
 interface MonthlyVisits {
   month: string;
@@ -30,10 +34,10 @@ export default function Dashboard() {
     activeLoans: 0,
     overdueCount: 0,
     totalBooks: 0,
+    totalMembers: 0,
   });
 
   const [monthlyData, setMonthlyData] = useState<MonthlyVisits[]>([]);
-  // Wadah data baru untuk menampung data peringkat dari backend
   const [topVisitors, setTopVisitors] = useState<TopUser[]>([]);
   const [topBorrowers, setTopBorrowers] = useState<TopUser[]>([]);
 
@@ -43,7 +47,6 @@ export default function Dashboard() {
       setStats(res.data.stats);
       setMonthlyData(res.data.monthlyData || []);
       
-      // Mengambil data top lists dengan aman jika disediakan oleh backend
       if (res.data.topLists) {
         setTopVisitors(res.data.topLists.visitors || []);
         setTopBorrowers(res.data.topLists.borrowers || []);
@@ -56,6 +59,12 @@ export default function Dashboard() {
   useEffect(() => {
     loadData();
 
+    // INITIALISASI AOS
+    AOS.init({
+      duration: 800,
+      once: true,
+    });
+
     window.addEventListener("visitsUpdated", loadData);
     window.addEventListener("focus", loadData);
 
@@ -66,15 +75,21 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div className="p-8 space-y-8">
-      {/* STATS */}
-      <StatsOverview stats={stats} />
+    <div className="p-8 space-y-8 overflow-x-hidden">
+      {/* STATS OVERVIEW - Animasi slide-down */}
+      <div data-aos="fade-down">
+        <StatsOverview stats={stats} />
+      </div>
 
       {/* BARIS 1: Kunjungan Bulanan (Kiri) + Siswa Paling Rajin Berkunjung (Kanan) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* KIRI: Grafik Kunjungan */}
-        <div className="lg:col-span-2 bg-white rounded-3xl p-8 shadow border border-slate-200">
+        {/* KIRI: Grafik Kunjungan - Slide dari Kiri */}
+        <div 
+          className="lg:col-span-2 bg-white rounded-3xl p-8 shadow border border-slate-200"
+          data-aos="fade-right"
+          data-aos-delay="100"
+        >
           <h2 className="text-lg font-bold mb-6 text-slate-800">
             Statistik Kunjungan Bulanan
           </h2>
@@ -113,15 +128,21 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* KANAN: Rekapan Peringkat Kunjungan */}
-        <TopUsersList title="Pengunjung Teraktif" data={topVisitors} />
+        {/* KANAN: Rekapan Peringkat Kunjungan - Slide dari Kanan */}
+        <div data-aos="fade-left" data-aos-delay="200" className="h-full flex flex-col">
+          <TopUsersList title="Pengunjung Teraktif" data={topVisitors} />
+        </div>
       </div>
 
       {/* BARIS 2: Transaksi Peminjaman (Kiri) + Siswa Paling Banyak Pinjam Buku (Kanan) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* KIRI: Grafik Transaksi */}
-        <div className="lg:col-span-2 bg-white rounded-3xl p-8 shadow border border-slate-200">
+        {/* KIRI: Grafik Transaksi - Slide dari Kiri */}
+        <div 
+          className="lg:col-span-2 bg-white rounded-3xl p-8 shadow border border-slate-200"
+          data-aos="fade-right"
+          data-aos-delay="200"
+        >
           <h2 className="text-lg font-bold mb-6 text-slate-800">
             Statistik Transaksi Peminjaman
           </h2>
@@ -144,7 +165,6 @@ export default function Dashboard() {
                 />
                 <Tooltip />
                 <Legend />
-                {/* Diwarnai dengan Ungu Gradient agar berbeda dengan grafik kunjungan */}
                 <Bar dataKey="visits" name="Transaksi Peminjaman" radius={[10, 10, 0, 0]} fill="url(#purpleGradient)" />
                 <defs>
                   <linearGradient id="purpleGradient" x1="0" y1="0" x2="0" y2="1">
@@ -161,8 +181,10 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* KANAN: Rekapan Peringkat Peminjaman */}
-        <TopUsersList title="Peminjam Terbanyak" data={topBorrowers} />
+        {/* KANAN: Rekapan Peringkat Peminjaman - Slide dari Kanan */}
+        <div data-aos="fade-left" data-aos-delay="300" className="h-full flex flex-col">
+          <TopUsersList title="Peminjam Terbanyak" data={topBorrowers} />
+        </div>
       </div>
 
     </div>

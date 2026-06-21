@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { Icons } from "../constants/icons";
 
-const SettingsModal = ({ onClose }: { onClose: () => void }) => {
+const SettingsModal = ({ onClose, onUpdate }: { onClose: () => void; onUpdate?: (data: any) => void }) => {
   const { user, updateUser } = useAuth();
   const modalRef = useRef<HTMLDivElement>(null);
   const [activeSection, setActiveSection] = useState<"profile" | "security" | "backup">("profile");
@@ -31,15 +31,17 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
   const config = { headers: { Authorization: `Bearer ${token}` } };
 
   useEffect(() => {
-    if (user) {
-      setFormData((prev) => ({
-        ...prev,
-        name: user.name || user.nama || user.nama_lengkap || "",
-        username: user.username || "",
-        email: user.email || "",
-      }));
-    }
-  }, [user]);
+  if (user) {
+    setFormData((prev) => ({
+      ...prev,
+      // Hapus penggunaan user.nama atau user.nama_lengkap yang menyebabkan error TS
+      // Cukup gunakan properti 'name' yang sudah ada di interface User/Admin Anda
+      name: user.name || "",
+      username: user.username || "",
+      email: user.email || "",
+    }));
+  }
+}, [user]);
 
   const fetchBackupInfo = async () => {
     try {
@@ -80,6 +82,8 @@ const SettingsModal = ({ onClose }: { onClose: () => void }) => {
           username: formData.username,
           email: formData.email,
         });
+
+        if (onUpdate) onUpdate({ name: formData.name, username: formData.username, email: formData.email });
 
         toast.success("Perubahan profil berhasil disimpan!");
       } else if (activeSection === "security") {

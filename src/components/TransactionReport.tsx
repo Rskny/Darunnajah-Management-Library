@@ -1,4 +1,5 @@
 import { useHistory } from "../context/HistoryContext";
+import { HistoryItem } from "../types"; // Pastikan import interface-nya
 
 interface Props {
   month: string;
@@ -8,36 +9,35 @@ interface Props {
 export default function TransactionReport({ month, year }: Props) {
   const { history } = useHistory();
 
-  // 1. FILTER DATA BERDASARKAN BULAN DAN TAHUN
   const transactions = history
-    .filter(item => item.category === "transaksi")
+    .filter(item => (item as any).category === "transaksi")
     .filter(item => {
-      // Mengantisipasi jika field tanggal di database menggunakan 'date' atau 'borrowDate'
-      const dateStr = item.date || item.borrowDate;
+      const dateStr = (item as any).date || (item as any).borrowDate;
       const date = new Date(dateStr);
       return !isNaN(date.getTime()) && 
              date.getMonth() + 1 === Number(month) && 
              date.getFullYear() === Number(year);
     })
     .map((item, index) => {
-      const dateStr = item.date || item.borrowDate;
+      const it = item as any; // Akses as any untuk menghindari error property
+      const dateStr = it.date || it.borrowDate;
       const date = new Date(dateStr);
-      
-      // Ambil status asli dari backend atau history context
-      const statusAsli = item.status ? item.status.toLowerCase() : "";
+      const statusAsli = it.status ? it.status.toLowerCase() : "";
 
       return {
         no: index + 1,
         tanggal: !isNaN(date.getTime()) ? date.getDate().toString().padStart(2, "0") : "00",
-        memberId: item.memberId || item.idAnggota || "-", // Tambahan untuk memunculkan Member ID (Foto 3)
-        nama: item.studentName || item.name || "-",
-        buku: item.bookTitle || item.activity || "-",
+        memberId: it.memberId || it.idAnggota || "-",
+        nama: it.studentName || it.name || "-",
+        buku: it.bookTitle || it.activity || "-",
         status:
           statusAsli === "meminjam" || statusAsli === "dipinjam" ? "Dipinjam" :
-          statusAsli === "tepat" || statusAsli === "dikembalikan" ? "Dikembalikan" :
-          statusAsli === "telat" || statusAsli === "terlambat" ? "Terlambat" : "-",
+          statusAsli === "tepat" || statusAsli === "dikembalikan" || statusAsli === "returned" ? "Dikembalikan" :
+          statusAsli === "telat" || statusAsli === "terlambat" || statusAsli === "overdue" ? "Terlambat" : "-",
       };
     });
+
+  // ... (sisa kode return kamu tetap sama)
 
   const handlePrint = () => {
     window.print();

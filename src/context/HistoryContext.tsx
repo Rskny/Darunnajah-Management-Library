@@ -14,7 +14,8 @@ export interface HistoryItem {
 
 interface HistoryContextType {
   history: HistoryItem[];
-  addHistory: (item: HistoryItem) => void;
+  // Menggunakan Omit agar kita tidak perlu mengirim 'id' saat menambah history
+  addHistory: (item: Omit<HistoryItem, 'id'>) => void;
   deleteHistory: (id: number) => void;
 }
 
@@ -23,8 +24,12 @@ const HistoryContext = createContext<HistoryContextType | null>(null);
 export const HistoryProvider = ({ children }: { children: React.ReactNode }) => {
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
-  const addHistory = (item: HistoryItem) => {
-    setHistory(prev => [item, ...prev]);
+  const addHistory = (item: Omit<HistoryItem, 'id'>) => {
+    const newItem: HistoryItem = {
+      ...item,
+      id: Date.now(), // Generate ID unik otomatis
+    };
+    setHistory(prev => [newItem, ...prev]);
   };
 
   const deleteHistory = (id: number) => {

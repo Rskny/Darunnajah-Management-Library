@@ -5,8 +5,22 @@ import TableBox from "../components/ui/TableBox";
 import apiClient from "../apiClient";
 import { useLocation } from "react-router-dom";
 
+// IMPORT AOS DAN CSS ANIMASINYA
+import AOS from "aos";
+import "aos/dist/aos.css";
+
+interface Transaction {
+  id: string | number;
+  status: string;
+  bookTitle?: string;
+  activity?: string;
+  studentName?: string;
+  name?: string;
+  memberId?: string;
+}
+
 export default function Peminjaman() {
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [sort, setSort] = useState<"asc" | "desc">("desc");
   const [limit, setLimit] = useState(10);
   
@@ -28,16 +42,20 @@ export default function Peminjaman() {
 
   useEffect(() => {
     fetchTransactions();
+    
+    // INISIALISASI AOS
+    AOS.init({
+      duration: 700,
+      once: true,
+    });
   }, []);
 
   // FUNGSI UTAMA RETURN BUKU
-  const updateTransaction = async (id: any) => {
+  const updateTransaction = async (id: string | number) => {
     try {
-      // Mengirimkan payload status 'Dikembalikan' ke backend route PUT /:id
       const res = await apiClient.put(`/transactions/${id}`, { status: "Dikembalikan" });
       alert(res.data.message || "Buku berhasil dikembalikan!");
       
-      // Ambil ulang data terbaru dari database agar tampilan langsung update
       fetchTransactions();
       window.dispatchEvent(new Event("booksUpdated")); 
     } catch (err) { 
@@ -75,11 +93,17 @@ export default function Peminjaman() {
       (t.name && t.name.toLowerCase().includes(q)) ||
       (t.memberId && t.memberId.toLowerCase().includes(q))
     )
-    .sort((a, b) => (sort === "asc" ? a.id - b.id : b.id - a.id))
+    // Perbaikan sorting aman untuk string maupun number ID
+    .sort((a, b) => {
+      const idA = String(a.id);
+      const idB = String(b.id);
+      return sort === "asc" ? idA.localeCompare(idB) : idB.localeCompare(idA);
+    })
     .slice(0, limit);
 
   return (
-    <div className="p-8 h-screen w-full max-w-full flex flex-col overflow-hidden bg-slate-50">
+    // Tambahkan data-aos="fade-up" untuk transisi halus halaman peminjaman
+    <div data-aos="fade-up" className="p-8 h-screen w-full max-w-full flex flex-col overflow-hidden bg-slate-50">
       
       {/* HEADER PAGE */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex-shrink-0 mb-6">

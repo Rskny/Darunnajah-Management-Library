@@ -6,9 +6,13 @@ import apiClient from "../apiClient";
 import { useHistory } from "../context/HistoryContext";
 import { useLocation } from "react-router-dom";
 
+// IMPORT AOS DAN CSS ANIMASINYA
+import AOS from "aos";
+import "aos/dist/aos.css";
+
 interface Visit {
   id: number;
-  memberId: string; // <-- Ditambahkan properti memberId menggantikan nis
+  memberId: string;
   name: string;
   kelas: string;
   chosing: string;
@@ -50,16 +54,22 @@ const Visits: React.FC = () => {
 
   useEffect(() => {
     fetchVisits();
+    
+    // INISIALISASI AOS
+    AOS.init({
+      duration: 700,
+      once: true,
+    });
+
     const interval = setInterval(fetchVisits, 60000); 
     return () => clearInterval(interval);
   }, []);
 
-  // PROSES SIMPAN KUNJUNGAN KE BACKEND
   const handleAddVisit = async (data: { memberId: string; name: string; kelas: string; chosing: string; purpose: string }) => {
     try {
       const now = new Date();
       await apiClient.post("/visits", {
-        memberId: data.memberId, // <-- MENGIRIM MEMBER ID ASLI KE BACKEND
+        memberId: data.memberId,
         name: data.name,
         kelas: data.kelas,
         chosing: data.chosing,
@@ -90,7 +100,7 @@ const Visits: React.FC = () => {
     .filter((v) =>
       !q ||
       v.name.toLowerCase().includes(q) ||
-      v.memberId?.toLowerCase().includes(q) || // <-- SEKARANG BISA CARI BERDASARKAN ID / NIS JUGA
+      v.memberId?.toLowerCase().includes(q) ||
       v.chosing.toLowerCase().includes(q) ||
       v.purpose.toLowerCase().includes(q) ||
       v.kelas.toLowerCase().includes(q)
@@ -99,9 +109,10 @@ const Visits: React.FC = () => {
     .slice(0, limit);
 
   return (
-    <div className="p-8 space-y-6">
+    // PERBAIKAN 1: Menjadikan container utama fleksibel penuh dan mengatur padding yang responsif
+    <div data-aos="fade-up" className="w-full min-h-full p-6 md:p-8 flex flex-col box-border">
       
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 mb-6">
         <PageHeader
           title="Kunjungan Hari Ini"
           subtitle="Data pengunjung perpustakaan"
@@ -118,49 +129,53 @@ const Visits: React.FC = () => {
         />
       </div>
 
-      <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium">
+      <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium mb-6 flex-shrink-0">
         Data kunjungan hanya tampil 24 jam lalu otomatis masuk riwayat.
       </div>
 
-      <div className="overflow-y-auto max-h-[58vh] rounded-3xl border border-slate-200 shadow-sm bg-white">
+      {/* PERBAIKAN 2: Menggunakan flex-1 min-h-0 agar tabel mengambil sisa ruang kosong secara fleksibel */}
+      <div className="flex-1 min-h-0 rounded-3xl border border-slate-200 shadow-sm bg-white overflow-hidden flex flex-col">
         <TableBox>
-          <table className="w-full text-sm">
-            <thead className="bg-slate-100 text-xs uppercase sticky top-0 z-10 shadow-sm">
-              <tr>
-                <th className="p-4 text-center w-16">No</th>
-                <th className="p-4 text-left">ID</th> {/* <-- KOLOM BARU DI TABLE */}
-                <th className="p-4 text-left">Nama</th>
-                <th className="p-4 text-left">Kelas</th>
-                <th className="p-4 text-left">Status</th>
-                <th className="p-4 text-left">Tujuan</th>
-                <th className="p-4 text-left">Tanggal</th>
-                <th className="p-4 text-left">Waktu</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {sorted.length === 0 ? (
+          {/* PERBAIKAN 3: Menambahkan container scrollable internal untuk tabel */}
+          <div className="overflow-auto flex-1">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-100 text-xs uppercase sticky top-0 z-10 shadow-sm">
                 <tr>
-                  <td colSpan={8} className="py-20 text-center text-slate-400"> {/* Colspan diubah ke 8 */}
-                    Belum ada kunjungan hari ini
-                  </td>
+                  <th className="p-4 text-center w-16">No</th>
+                  <th className="p-4 text-left">ID</th>
+                  <th className="p-4 text-left">Nama</th>
+                  <th className="p-4 text-left">Kelas</th>
+                  <th className="p-4 text-left">Status</th>
+                  <th className="p-4 text-left">Tujuan</th>
+                  <th className="p-4 text-left">Tanggal</th>
+                  <th className="p-4 text-left">Waktu</th>
                 </tr>
-              ) : (
-                sorted.map((v, i) => (
-                  <tr key={v.id} className="border-t hover:bg-slate-50">
-                    <td className="p-4 text-center font-semibold text-slate-500">{i + 1}</td>
-                    <td className="p-4 font-bold text-slate-700 font-mono">{v.memberId || "-"}</td> {/* <-- VALUE BARU DI TABLE */}
-                    <td className="p-4 font-medium">{v.name}</td>
-                    <td className="p-4">{v.kelas}</td>
-                    <td className="p-4">{v.chosing}</td>
-                    <td className="p-4">{v.purpose}</td>
-                    <td className="p-4">{new Date(v.date).toLocaleDateString("id-ID")}</td>
-                    <td className="p-4 text-slate-500">{v.time}</td>
+              </thead>
+
+              <tbody>
+                {sorted.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-20 text-center text-slate-400 font-medium">
+                      Belum ada kunjungan hari ini
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  sorted.map((v, i) => (
+                    <tr key={v.id} className="border-t hover:bg-slate-50 transition-colors">
+                      <td className="p-4 text-center font-semibold text-slate-500">{i + 1}</td>
+                      <td className="p-4 font-bold text-slate-700 font-mono tracking-wider">{v.memberId || "-"}</td>
+                      <td className="p-4 font-medium">{v.name}</td>
+                      <td className="p-4 text-slate-600">{v.kelas}</td>
+                      <td className="p-4">{v.chosing}</td>
+                      <td className="p-4 text-slate-600">{v.purpose}</td>
+                      <td className="p-4">{new Date(v.date).toLocaleDateString("id-ID")}</td>
+                      <td className="p-4 text-slate-500">{v.time}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </TableBox>
       </div>
 
