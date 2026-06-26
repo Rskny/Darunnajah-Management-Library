@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const authenticateToken = require('../authMiddleware');
-
+ 
 const isToday = (dateString) => {
     const d = new Date(dateString);
     const now = new Date();
@@ -12,7 +12,7 @@ const isToday = (dateString) => {
         d.getFullYear() === now.getFullYear()
     );
 };
-
+ 
 /**
  * @swagger
  * components:
@@ -93,7 +93,7 @@ const isToday = (dateString) => {
  *           type: string
  *           example: "09:30:00"
  */
-
+ 
 /**
  * @swagger
  * /api/reports:
@@ -101,7 +101,7 @@ const isToday = (dateString) => {
  *     summary: Mengambil data laporan berdasarkan filter
  *     description: >
  *       Mengambil laporan transaksi peminjaman (status Dikembalikan) atau
- *       laporan kunjungan berdasarkan bulan dan tahun.
+ *       laporan kunjungan berdasarkan rentang tanggal (startDate - endDate).
  *       Laporan kunjungan otomatis mengecualikan data hari ini.
  *     tags: [Reports]
  *     security:
@@ -116,17 +116,19 @@ const isToday = (dateString) => {
  *         description: Tipe laporan yang diminta
  *         example: transaksi
  *       - in: query
- *         name: month
+ *         name: startDate
  *         schema:
  *           type: string
- *         description: Nomor bulan 1-12 atau "all" untuk satu tahun penuh
- *         example: "6"
+ *           format: date
+ *         description: Tanggal mulai (format YYYY-MM-DD)
+ *         example: "2026-06-01"
  *       - in: query
- *         name: year
+ *         name: endDate
  *         schema:
- *           type: integer
- *         description: Tahun laporan
- *         example: 2026
+ *           type: string
+ *           format: date
+ *         description: Tanggal akhir (format YYYY-MM-DD)
+ *         example: "2026-06-26"
  *     responses:
  *       200:
  *         description: Berhasil mengambil data laporan
@@ -141,7 +143,7 @@ const isToday = (dateString) => {
  *                   items:
  *                     $ref: '#/components/schemas/VisitReport'
  *       400:
- *         description: Parameter type wajib diisi
+ *         description: Parameter tidak valid
  *         content:
  *           application/json:
  *             schema:
@@ -164,24 +166,36 @@ const isToday = (dateString) => {
  */
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const { type, month, year } = req.query;
-
+        const { type, startDate, endDate } = req.query;
+ 
         if (!type) {
             return res.status(400).json({ error: 'Parameter type wajib diisi (transaksi/kunjungan)' });
         }
-
+ 
+        // Validasi format & urutan tanggal jika keduanya dikirim
+        if (startDate && endDate) {
+            const validFormat = /^\d{4}-\d{2}-\d{2}$/;
+            if (!validFormat.test(startDate) || !validFormat.test(endDate)) {
+                return res.status(400).json({ error: 'Format startDate/endDate harus YYYY-MM-DD' });
+            }
+            if (new Date(startDate) > new Date(endDate)) {
+                return res.status(400).json({ error: 'startDate tidak boleh lebih besar dari endDate' });
+            }
+        }
+ 
         if (type === 'kunjungan') {
             let query = db('visits').select('*').orderBy('id', 'desc');
-
-            if (year) query = query.whereRaw('YEAR(date) = ?', [year]);
-            if (month && month !== 'all') query = query.whereRaw('MONTH(date) = ?', [month]);
-
+ 
+            if (startDate && endDate) {
+                query = query.whereRaw('DATE(date) BETWEEN ? AND ?', [startDate, endDate]);
+            }
+ 
             const allData = await query;
             const data = allData.filter(item => !isToday(item.date));
-
+ 
             return res.status(200).json(data);
         }
-
+ 
         // TRANSAKSI
         let query = db('transactions')
             .select(
@@ -192,16 +206,17 @@ router.get('/', authenticateToken, async (req, res) => {
             .leftJoin('books', 'transactions.bookId', 'books.id')
             .where('transactions.status', 'Dikembalikan')
             .orderBy('transactions.id', 'desc');
-
-        if (year) query = query.whereRaw('YEAR(borrowDate) = ?', [year]);
-        if (month && month !== 'all') query = query.whereRaw('MONTH(borrowDate) = ?', [month]);
-
+ 
+        if (startDate && endDate) {
+            query = query.whereRaw('DATE(borrowDate) BETWEEN ? AND ?', [startDate, endDate]);
+        }
+ 
         const data = await query;
         return res.status(200).json(data);
-
+ 
     } catch (error) {
         res.status(500).json({ error: 'Gagal mengambil data laporan', detail: error.message });
     }
 });
-
+ 
 module.exports = router;

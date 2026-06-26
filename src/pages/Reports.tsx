@@ -8,6 +8,8 @@ const months = [
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
 ];
 
+const YEAR_OPTIONS = [2024, 2025, 2026, 2027];
+
 const formatReportDate = (dateStr: any) => {
   if (!dateStr) return "-";
   const d = new Date(dateStr);
@@ -20,6 +22,75 @@ const formatReportDate = (dateStr: any) => {
   }
   return String(dateStr);
 };
+
+// jumlah hari valid di bulan/tahun tertentu (biar gak ada tanggal 31 Februari dsb)
+const daysInMonth = (month: number, year: number) => new Date(year, month, 0).getDate();
+
+// gabungkan hari/bulan/tahun jadi string YYYY-MM-DD
+const toDateStr = (day: number, month: number, year: number) =>
+  `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+// ─── Komponen Dropdown Tanggal (Hari + Bulan + Tahun) ────────────────────────
+function DateRangeSelect({
+  day,
+  month,
+  year,
+  onDayChange,
+  onMonthChange,
+  onYearChange,
+}: {
+  day: number;
+  month: number;
+  year: number;
+  onDayChange: (d: number) => void;
+  onMonthChange: (m: number) => void;
+  onYearChange: (y: number) => void;
+}) {
+  const maxDay = daysInMonth(month, year);
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="relative">
+        <select
+          value={day}
+          onChange={(e) => onDayChange(Number(e.target.value))}
+          className="pl-3 pr-7 py-2 rounded-full text-xs font-black bg-white/10 text-white border border-white/15 focus:outline-none focus:ring-2 focus:ring-blue-500/60 appearance-none cursor-pointer"
+        >
+          {Array.from({ length: maxDay }, (_, i) => i + 1).map((d) => (
+            <option key={d} value={d} className="text-slate-800 bg-white">{d}</option>
+          ))}
+        </select>
+        <svg className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"/></svg>
+      </div>
+
+      <div className="relative">
+        <select
+          value={month}
+          onChange={(e) => onMonthChange(Number(e.target.value))}
+          className="pl-3 pr-7 py-2 rounded-full text-xs font-black bg-white/10 text-white border border-white/15 focus:outline-none focus:ring-2 focus:ring-blue-500/60 appearance-none cursor-pointer"
+        >
+          {months.map((m, i) => (
+            <option key={i} value={i + 1} className="text-slate-800 bg-white">{m}</option>
+          ))}
+        </select>
+        <svg className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"/></svg>
+      </div>
+
+      <div className="relative">
+        <select
+          value={year}
+          onChange={(e) => onYearChange(Number(e.target.value))}
+          className="pl-3 pr-7 py-2 rounded-full text-xs font-black bg-white/10 text-white border border-white/15 focus:outline-none focus:ring-2 focus:ring-blue-500/60 appearance-none cursor-pointer"
+        >
+          {YEAR_OPTIONS.map((y) => (
+            <option key={y} value={y} className="text-slate-800 bg-white">{y}</option>
+          ))}
+        </select>
+        <svg className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"/></svg>
+      </div>
+    </div>
+  );
+}
 
 // ─── Komponen Dropdown Download Button ───────────────────────────────────────
 function DownloadDropdown({
@@ -342,20 +413,51 @@ function DataAnggotaDownload() {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function Reports() {
   const [type, setType] = useState<"transaksi" | "kunjungan">("transaksi");
-  const [month, setMonth] = useState<number | "all">(new Date().getMonth() + 1);
-  const [year, setYear] = useState(new Date().getFullYear());
+
+  const today = new Date();
+  const firstDayThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  // ── State rentang tanggal: hari / bulan / tahun, masing-masing untuk start & end ──
+  const [startDay, setStartDay] = useState(firstDayThisMonth.getDate());
+  const [startMonth, setStartMonth] = useState(firstDayThisMonth.getMonth() + 1);
+  const [startYear, setStartYear] = useState(firstDayThisMonth.getFullYear());
+
+  const [endDay, setEndDay] = useState(today.getDate());
+  const [endMonth, setEndMonth] = useState(today.getMonth() + 1);
+  const [endYear, setEndYear] = useState(today.getFullYear());
+
   const [reportData, setReportData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const startDate = toDateStr(startDay, startMonth, startYear);
+  const endDate = toDateStr(endDay, endMonth, endYear);
+  const isRangeInvalid = new Date(startDate) > new Date(endDate);
+
+  // Auto-clamp hari kalau pindah ke bulan/tahun yang jumlah harinya lebih sedikit
   useEffect(() => {
+    const max = daysInMonth(startMonth, startYear);
+    if (startDay > max) setStartDay(max);
+  }, [startMonth, startYear]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const max = daysInMonth(endMonth, endYear);
+    if (endDay > max) setEndDay(max);
+  }, [endMonth, endYear]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (isRangeInvalid) {
+      setError("Tanggal mulai tidak boleh lebih besar dari tanggal akhir");
+      setReportData([]);
+      return;
+    }
+
     const fetchReport = async () => {
       setLoading(true);
       setError(null);
       try {
-        const monthParam = month === "all" ? "all" : month;
         const response = await apiClient.get("/reports", {
-          params: { type, month: monthParam, year, _t: Date.now() },
+          params: { type, startDate, endDate, _t: Date.now() },
         });
         setReportData(response.data || []);
       } catch (err: any) {
@@ -366,9 +468,13 @@ export default function Reports() {
       }
     };
     fetchReport();
-  }, [type, month, year]);
+  }, [type, startDate, endDate, isRangeInvalid]);
 
   const downloadPDF = () => {
+    if (isRangeInvalid) {
+      alert("⚠️ Tanggal mulai tidak boleh lebih besar dari tanggal akhir!");
+      return;
+    }
     if (reportData.length === 0) {
       alert("⚠️ Tidak ada data untuk di-download!");
       return;
@@ -395,9 +501,7 @@ export default function Reports() {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.text(
-      month === "all"
-        ? `Tahun ${year}`
-        : `${months[typeof month === "number" ? month - 1 : 0]} ${year}`,
+      `${startDay} ${months[startMonth - 1]} ${startYear} - ${endDay} ${months[endMonth - 1]} ${endYear}`,
       pageWidth - 20, 27, { align: "right" }
     );
     doc.setDrawColor(0);
@@ -429,7 +533,14 @@ export default function Reports() {
           6: { cellWidth: 50, halign: "left" },
         };
 
-    const tableBody = reportData.map((item, index) => {
+    // Urutkan data dari tanggal terkecil (paling lama) ke terbesar (paling baru)
+    const sortedData = [...reportData].sort((a, b) => {
+      const dateA = new Date(a.date || a.borrowDate || a.tanggal).getTime();
+      const dateB = new Date(b.date || b.borrowDate || b.tanggal).getTime();
+      return dateA - dateB;
+    });
+
+    const tableBody = sortedData.map((item, index) => {
       const tgl = formatReportDate(item.date || item.borrowDate || item.tanggal);
       const nama = String(item.name || item.nama || item.studentName || "-")
         .substring(0, 30)
@@ -456,7 +567,6 @@ export default function Reports() {
       startY: 40,
       margin: { left: 15, right: 15 },
       tableWidth: "wrap",
-      // PERBAIKAN: halign dipindahkan ke dalam objek styles
       styles: { fontSize: 8, cellPadding: 3, valign: "middle", overflow: "hidden", textColor: [0, 0, 0], halign: "center" },
       head: tableHeaders,
       body: tableBody,
@@ -481,7 +591,7 @@ export default function Reports() {
     doc.setFontSize(7);
     doc.setTextColor(150);
     doc.text(`Cetak: ${new Date().toLocaleDateString("id-ID")}`, pageWidth - 15, finalY + 8, { align: "right" });
-    doc.save(`Laporan_${type}_${year}.pdf`);
+    doc.save(`Laporan_${type}_${startDate}_sd_${endDate}.pdf`);
   };
 
   return (
@@ -512,36 +622,31 @@ export default function Reports() {
             <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"/></svg>
           </div>
 
-          <div className="relative">
-            <select
-              value={month}
-              onChange={(e) => setMonth(e.target.value === "all" ? "all" : Number(e.target.value))}
-              className="pl-4 pr-9 py-2 rounded-full text-xs font-black bg-white/10 text-white border border-white/15 focus:outline-none focus:ring-2 focus:ring-blue-500/60 appearance-none cursor-pointer"
-            >
-              <option value="all" className="text-slate-800 bg-white">One Year Report</option>
-              {months.map((m, i) => (
-                <option key={i} value={i + 1} className="text-slate-800 bg-white">{m}</option>
-              ))}
-            </select>
-            <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"/></svg>
-          </div>
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Dari</span>
+          <DateRangeSelect
+            day={startDay}
+            month={startMonth}
+            year={startYear}
+            onDayChange={setStartDay}
+            onMonthChange={setStartMonth}
+            onYearChange={setStartYear}
+          />
 
-          <div className="relative">
-            <select
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
-              className="pl-4 pr-9 py-2 rounded-full text-xs font-black bg-white/10 text-white border border-white/15 focus:outline-none focus:ring-2 focus:ring-blue-500/60 appearance-none cursor-pointer"
-            >
-              {[2024, 2025, 2026, 2027].map((y) => (
-                <option key={y} className="text-slate-800 bg-white">{y}</option>
-              ))}
-            </select>
-            <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7"/></svg>
-          </div>
+          
+
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Sampai</span>
+          <DateRangeSelect
+            day={endDay}
+            month={endMonth}
+            year={endYear}
+            onDayChange={setEndDay}
+            onMonthChange={setEndMonth}
+            onYearChange={setEndYear}
+          />
 
           <button
             onClick={downloadPDF}
-            disabled={loading}
+            disabled={loading || isRangeInvalid}
             className="px-6 py-2 rounded-full bg-blue-600 text-white text-xs font-black uppercase tracking-widest hover:bg-blue-500 shadow-lg shadow-blue-600/30 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
           >
             {loading ? "LOADING..." : "⬇ DOWNLOAD PDF"}

@@ -13,10 +13,6 @@ import {
   Legend,
 } from "recharts";
 
-// IMPORT AOS DAN CSS ANIMASINYA
-import AOS from "aos";
-import "aos/dist/aos.css";
-
 interface MonthlyVisits {
   month: string;
   visits: number;
@@ -59,12 +55,6 @@ export default function Dashboard() {
   useEffect(() => {
     loadData();
 
-    // INITIALISASI AOS
-    AOS.init({
-      duration: 800,
-      once: true,
-    });
-
     window.addEventListener("visitsUpdated", loadData);
     window.addEventListener("focus", loadData);
 
@@ -76,20 +66,16 @@ export default function Dashboard() {
 
   return (
     <div className="p-8 space-y-8 overflow-x-hidden">
-      {/* STATS OVERVIEW - Animasi slide-down */}
-      <div data-aos="fade-down">
+      {/* STATS OVERVIEW */}
+      <div>
         <StatsOverview stats={stats} />
       </div>
 
       {/* BARIS 1: Kunjungan Bulanan (Kiri) + Siswa Paling Rajin Berkunjung (Kanan) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* KIRI: Grafik Kunjungan - Slide dari Kiri */}
-        <div 
-          className="lg:col-span-2 bg-white rounded-3xl p-8 shadow border border-slate-200"
-          data-aos="fade-right"
-          data-aos-delay="100"
-        >
+        {/* KIRI: Grafik Kunjungan */}
+        <div className="lg:col-span-2 bg-white rounded-3xl p-8 shadow border border-slate-200">
           <h2 className="text-lg font-bold mb-6 text-slate-800">
             Statistik Kunjungan Bulanan
           </h2>
@@ -128,8 +114,8 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* KANAN: Rekapan Peringkat Kunjungan - Slide dari Kanan */}
-        <div data-aos="fade-left" data-aos-delay="200" className="h-full flex flex-col">
+        {/* KANAN: Rekapan Peringkat Kunjungan */}
+        <div className="h-full flex flex-col">
           <TopUsersList title="Pengunjung Teraktif" data={topVisitors} />
         </div>
       </div>
@@ -137,12 +123,8 @@ export default function Dashboard() {
       {/* BARIS 2: Transaksi Peminjaman (Kiri) + Siswa Paling Banyak Pinjam Buku (Kanan) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* KIRI: Grafik Transaksi - Slide dari Kiri */}
-        <div 
-          className="lg:col-span-2 bg-white rounded-3xl p-8 shadow border border-slate-200"
-          data-aos="fade-right"
-          data-aos-delay="200"
-        >
+        {/* KIRI: Grafik Transaksi */}
+        <div className="lg:col-span-2 bg-white rounded-3xl p-8 shadow border border-slate-200">
           <h2 className="text-lg font-bold mb-6 text-slate-800">
             Statistik Transaksi Peminjaman
           </h2>
@@ -181,8 +163,8 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* KANAN: Rekapan Peringkat Peminjaman - Slide dari Kanan */}
-        <div data-aos="fade-left" data-aos-delay="300" className="h-full flex flex-col">
+        {/* KANAN: Rekapan Peringkat Peminjaman */}
+        <div className="h-full flex flex-col">
           <TopUsersList title="Peminjam Terbanyak" data={topBorrowers} />
         </div>
       </div>
