@@ -33,6 +33,26 @@ const Header: React.FC = () => {
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
+  // 🔽 BARU: sinkronkan input search dengan query param ?search= di URL saat pindah halaman
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setSearch(params.get("search") || "");
+  }, [location.pathname]);
+  // 🔼 BARU
+
+  // 🔽 BARU: tiap kali user ngetik, update URL supaya halaman (mis. DataAnggota) bisa baca query-nya
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    const params = new URLSearchParams(location.search);
+    if (value) {
+      params.set("search", value);
+    } else {
+      params.delete("search");
+    }
+    navigate({ pathname: location.pathname, search: params.toString() }, { replace: true });
+  };
+  // 🔼 BARU
+
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -57,12 +77,17 @@ const Header: React.FC = () => {
 
       <div className="flex items-center gap-6">
         {!hideSearch && (
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={getPlaceholder()}
-            className="pl-11 pr-4 py-2.5 rounded-2xl bg-slate-100 w-72 text-sm"
-          />
+          <div className="relative">{/* 🔽 BARU: wrapper buat ikon */}
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+              🔍
+            </span>
+            <input
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)} // 🔁 UBAH: pakai handleSearchChange
+              placeholder={getPlaceholder()}
+              className="pl-11 pr-4 py-2.5 rounded-2xl bg-slate-100 w-72 text-sm outline-none focus:ring-2 focus:ring-blue-600"
+            />
+          </div>
         )}
 
         <div ref={menuRef} className="relative">

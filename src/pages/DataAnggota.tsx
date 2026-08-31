@@ -3,8 +3,8 @@ import PageHeader from "../components/PageHeader";
 import MemberFormModal from "../components/MemberFormModal";
 import apiClient from "../apiClient";
 import { useLocation } from "react-router-dom";
+import type { Member as ModalMember } from "../types";
 
-// IMPORT AOS DAN CSS ANIMASINYA
 import AOS from "aos";
 import "aos/dist/aos.css";
 
@@ -17,12 +17,21 @@ export interface Member {
   gender: string;
 }
 
+const toModalMember = (m: Member): ModalMember => ({
+  id: m.id || "",
+  name: m.nama,
+  role: m.status === "teacher" ? "Guru" : "Siswa",
+  class: m.kelas,
+  joinDate: new Date().toISOString(),
+  status: (m.status as "student" | "teacher") || "student",
+  major: m.jurusan,
+  gender: m.gender,
+});
+
 export default function DataAnggota() {
   const [open, setOpen] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [showSelect, setShowSelect] = useState(false);
-  
-  // Perbaikan: Mengubah state selected dari index (number) menjadi ID Anggota (string)
   const [selected, setSelected] = useState<string[]>([]);
   const [sort, setSort] = useState<"asc" | "desc">("desc");
   const [limit, setLimit] = useState(10);
@@ -41,17 +50,11 @@ export default function DataAnggota() {
     }
   };
 
-  useEffect(() => { 
-    fetchMembers(); 
-    
-    // INISIALISASI AOS
-    AOS.init({
-      duration: 700,
-      once: true,
-    });
+  useEffect(() => {
+    fetchMembers();
+    AOS.init({ duration: 700, once: true });
   }, []);
 
-  // Perbaikan seleksi berbasis ID unik string
   const toggleSelect = (id: string) => {
     setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
   };
@@ -67,7 +70,6 @@ export default function DataAnggota() {
   const deleteSelected = async () => {
     if (!window.confirm(`Hapus ${selected.length} anggota terpilih?`)) return;
     try {
-      // Menghapus data secara paralel menggunakan Promise.all agar jauh lebih cepat dan aman
       await Promise.all(selected.map(id => apiClient.delete(`/members/${id}`)));
       fetchMembers();
       setSelected([]);
@@ -78,9 +80,15 @@ export default function DataAnggota() {
     }
   };
 
-  const handleUpdateMember = async (id: string, data: Partial<Member>) => {
+  const handleUpdateMember = async (id: string, data: Partial<ModalMember>) => {
     try {
-      await apiClient.put(`/members/${id}`, data);
+      const payload = {
+        nama: data.name,
+        kelas: data.class,
+        jurusan: data.major,
+        gender: data.gender,
+      };
+      await apiClient.put(`/members/${id}`, payload);
       fetchMembers();
       setEditMember(null);
     } catch (err) {
@@ -105,10 +113,8 @@ export default function DataAnggota() {
     .slice(0, limit);
 
   return (
-    // PERBAIKAN 1: Membuang h-screen, max-w-full, dan overflow-hidden agar mengikuti layout App.tsx
     <div data-aos="fade-up" className="w-full min-h-full p-6 md:p-8 flex flex-col bg-slate-50 box-border">
 
-      {/* HEADER */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex-shrink-0 mb-6">
         <PageHeader
           title="Data Anggota"
@@ -137,16 +143,14 @@ export default function DataAnggota() {
         />
       </div>
 
-      {/* TABEL DENGAN VIEWPORT GULIR (SCROLLABLE) */}
-      {/* PERBAIKAN 2: Container tabel menjadi flex-1 penuh */}
+      {/* 🔁 UBAH: minWidth diturunkan karena kolom-kolom sekarang lebih ramping */}
       <div className="flex-1 min-h-0 w-full rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col relative">
         <div className="overflow-auto flex-1">
-          
-          <table className="w-full text-sm border-collapse" style={{ minWidth: "1100px" }}>
+          <table className="w-full text-sm border-collapse" style={{ minWidth: "820px" }}>
             <thead className="sticky top-0 z-30 bg-slate-100 text-slate-600 text-xs uppercase border-b border-slate-200">
               <tr>
                 {showSelect && (
-                  <th className="px-6 py-5 w-16 text-center">
+                  <th className="px-4 py-5 w-12 text-center">
                     <input
                       type="checkbox"
                       checked={sorted.length > 0 && selected.length === sorted.length}
@@ -154,23 +158,21 @@ export default function DataAnggota() {
                     />
                   </th>
                 )}
-                <th className="px-6 py-5 w-16 text-center">No</th>
-                <th className="px-6 py-5 text-left w-32 whitespace-nowrap">ID Anggota</th>
-                <th className="px-6 py-5 text-left w-72 whitespace-nowrap">Nama Lengkap</th>
-                <th className="px-6 py-5 text-center w-40 whitespace-nowrap">Status / Role</th>
-                <th className="px-6 py-5 text-left w-44 whitespace-nowrap">Kelas</th>
-                <th className="px-6 py-5 text-center w-48 whitespace-nowrap">Jurusan</th>
-                <th className="px-6 py-5 text-center w-28 whitespace-nowrap">Aksi</th>
+                {/* 🔁 UBAH: lebar tiap kolom dikecilkan sesuai kebutuhan konten */}
+                <th className="px-4 py-5 w-12 text-center">No</th>
+                <th className="px-4 py-5 text-left w-28 whitespace-nowrap">ID Anggota</th>
+                <th className="px-4 py-5 text-left w-56 whitespace-nowrap">Nama Lengkap</th>
+                <th className="px-4 py-5 text-center w-28 whitespace-nowrap">Status / Role</th>
+                <th className="px-4 py-5 text-left w-20 whitespace-nowrap">Kelas</th>
+                <th className="px-4 py-5 text-center w-24 whitespace-nowrap">Jurusan</th>
+                <th className="px-4 py-5 text-center w-16 whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-slate-100">
               {sorted.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={showSelect ? 8 : 7}
-                    className="py-20 text-center text-slate-400 font-medium"
-                  >
+                  <td colSpan={showSelect ? 8 : 7} className="py-20 text-center text-slate-400 font-medium">
                     Belum ada data anggota
                   </td>
                 </tr>
@@ -178,7 +180,7 @@ export default function DataAnggota() {
                 sorted.map((m, i) => (
                   <tr key={m.id || i} className="hover:bg-slate-50 transition-colors">
                     {showSelect && (
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-4 py-4 text-center">
                         <input
                           type="checkbox"
                           checked={!!m.id && selected.includes(m.id)}
@@ -186,29 +188,20 @@ export default function DataAnggota() {
                         />
                       </td>
                     )}
-                    <td className="px-6 py-4 text-center text-slate-400 font-bold">{i + 1}</td>
-                    <td className="px-6 py-4 text-left font-mono font-bold text-slate-800 tracking-wider">
-                      {m.id}
-                    </td>
-                    <td className="px-6 py-4 text-left font-semibold text-slate-700">
-                      {m.nama}
-                    </td>
-                    
-                    <td className="px-6 py-4 text-center whitespace-nowrap">
+                    <td className="px-4 py-4 text-center text-slate-400 font-bold">{i + 1}</td>
+                    <td className="px-4 py-4 text-left font-mono font-bold text-slate-800 tracking-wider">{m.id}</td>
+                    <td className="px-4 py-4 text-left font-semibold text-slate-700">{m.nama}</td>
+                    <td className="px-4 py-4 text-center whitespace-nowrap">
                       <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                         m.status.toLowerCase() === 'teacher' || m.status.toLowerCase() === 'guru'
-                          ? 'bg-amber-100 text-amber-800' 
+                          ? 'bg-amber-100 text-amber-800'
                           : 'bg-blue-100 text-blue-800'
                       }`}>
                         {m.status}
                       </span>
                     </td>
-                    
-                    <td className="px-6 py-4 text-left text-slate-600 whitespace-nowrap">
-                      {m.kelas}
-                    </td>
-                    
-                    <td className="px-6 py-4 text-center whitespace-nowrap">
+                    <td className="px-4 py-4 text-left text-slate-600 whitespace-nowrap">{m.kelas}</td>
+                    <td className="px-4 py-4 text-center whitespace-nowrap">
                       {m.jurusan && m.jurusan !== "-" ? (
                         <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-md text-xs font-bold uppercase tracking-wide">
                           {m.jurusan}
@@ -217,13 +210,9 @@ export default function DataAnggota() {
                         <span className="text-slate-400">-</span>
                       )}
                     </td>
-                    
-                    <td className="px-6 py-4 text-center">
+                    <td className="px-4 py-4 text-center">
                       <button
-                        onClick={() => {
-                          setEditMember(m);
-                          setOpen(true);
-                        }}
+                        onClick={() => { setEditMember(m); setOpen(true); }}
                         className="p-2 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100 border border-amber-200 transition-all"
                         title="Edit Anggota"
                       >
@@ -235,11 +224,9 @@ export default function DataAnggota() {
               )}
             </tbody>
           </table>
-
         </div>
       </div>
 
-      {/* BUTTON ACTION HAPUS MASSAL */}
       {showSelect && selected.length > 0 && (
         <div className="flex-shrink-0 pt-4 text-right">
           <button
@@ -251,16 +238,20 @@ export default function DataAnggota() {
         </div>
       )}
 
-      {/* MODAL FORM */}
       {open && (
         <MemberFormModal
-          onClose={() => {
-            setOpen(false);
-            setEditMember(null);
-          }}
+          onClose={() => { setOpen(false); setEditMember(null); }}
           onImport={async (data) => {
             try {
-              for (const m of data) await apiClient.post("/members", m);
+              for (const m of data) {
+                await apiClient.post("/members", {
+                  nama: m.name,
+                  status: m.status,
+                  kelas: m.class,
+                  jurusan: m.major,
+                  gender: m.gender,
+                });
+              }
               fetchMembers();
               setOpen(false);
             } catch (err) {
@@ -268,7 +259,7 @@ export default function DataAnggota() {
             }
           }}
           onUpdate={handleUpdateMember}
-          initialData={editMember}
+          initialData={editMember ? toModalMember(editMember) : null}
         />
       )}
     </div>

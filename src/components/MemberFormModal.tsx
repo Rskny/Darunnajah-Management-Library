@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Member } from "../../types"; 
+import { Member } from "../types";
 import apiClient from "../apiClient";
 
 interface Props {
@@ -14,6 +14,10 @@ const REQUIRED_HEADERS = ["name", "status", "class", "major", "gender"];
 const REQUIRED_FIELDS = ["name", "status", "class", "major", "gender"];
 const KELAS_LIST = ["1", "2", "3", "4", "5", "6", "Intensive", "-"];
 const JURUSAN_LIST = ["Tsanawiyah", "IPS", "IPA", "MAK", "-"];
+const ROLE_OPTIONS = [
+  { value: "student", label: "Siswa" },
+  { value: "teacher", label: "Guru" },
+];
 
 export default function MemberFormModal({ onClose, onImport, onUpdate, initialData }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -22,15 +26,16 @@ export default function MemberFormModal({ onClose, onImport, onUpdate, initialDa
   const [manualData, setManualData] = useState<Member>({
     id: "",
     name: "",
-    role: "Siswa", // Default role
+    role: "Siswa",
     class: "",
     joinDate: new Date().toISOString(),
-    status: "active",
+    status: "student",
     major: "",
     gender: "",
   });
 
   const [generatedId, setGeneratedId] = useState<string>("");
+  const [isGeneratingId, setIsGeneratingId] = useState(false);
 
   useEffect(() => {
     if (initialData) {
@@ -38,6 +43,27 @@ export default function MemberFormModal({ onClose, onImport, onUpdate, initialDa
       setGeneratedId(initialData.id || "");
     }
   }, [initialData]);
+
+  // Auto-generate ID (S.../T...) tiap kali "Jenis Anggota" berubah, hanya saat mode tambah baru
+  useEffect(() => {
+    if (isEditMode) return;
+
+    const fetchNextId = async () => {
+      setIsGeneratingId(true);
+      try {
+        const res = await apiClient.get("/members/next-id", {
+          params: { status: manualData.status },
+        });
+        setGeneratedId(res.data.nextId);
+      } catch (err) {
+        console.error("Gagal mengambil ID berikutnya:", err);
+      } finally {
+        setIsGeneratingId(false);
+      }
+    };
+
+    fetchNextId();
+  }, [manualData.status, isEditMode]);
 
   const handleCSVImport = (file: File) => {
     const reader = new FileReader();
@@ -48,21 +74,21 @@ export default function MemberFormModal({ onClose, onImport, onUpdate, initialDa
         const rows = text.split("\n").map((r) => r.trim()).filter(Boolean);
         if (rows.length < 2) return alert("CSV harus punya header & minimal 1 data");
         const headers = rows[0].split(",").map((h) => h.trim().toLowerCase());
-        
+
         if (REQUIRED_HEADERS.some((h) => !headers.includes(h))) {
           alert("Header wajib: name, status, class, major, gender");
           return;
         }
-        
+
         const data: Member[] = [];
         for (let i = 1; i < rows.length; i++) {
           const values = rows[i].split(",").map((v) => v.trim());
           const obj = Object.fromEntries(headers.map((h, idx) => [h, values[idx] || ""]));
-          
+
           const isDataValid = REQUIRED_FIELDS.every(field => obj[field] && obj[field].trim() !== "");
           if (!isDataValid) {
             alert(`Data tidak lengkap pada baris ${i + 1}`);
-            return; 
+            return;
           }
           data.push(obj as unknown as Member);
         }
@@ -90,7 +116,7 @@ export default function MemberFormModal({ onClose, onImport, onUpdate, initialDa
         status: manualData.status,
       });
     } else {
-      onImport([manualData]);
+      onImport([{ ...manualData, id: generatedId }]);
     }
     onClose();
   };
@@ -120,12 +146,32 @@ export default function MemberFormModal({ onClose, onImport, onUpdate, initialDa
           )}
 
           <div className="space-y-4">
+            {!isEditMode && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase text-slate-500">ID Anggota</label>
+                <input
+                  readOnly
+                  value={isGeneratingId ? "Menghasilkan ID..." : generatedId}
+                  className="w-full px-4 py-3 bg-slate-200 opacity-70 font-bold rounded-xl border-none outline-none cursor-not-allowed text-slate-600"
+                />
+              </div>
+            )}
+
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase text-slate-500">Status</label>
-              <select className={inputClass} value={manualData.status} onChange={(e) => setManualData({ ...manualData, status: e.target.value as "active" | "inactive" })}>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
+              <label className="text-xs font-bold uppercase text-slate-500">Jenis Anggota</label>
+              <div className="relative">
+                <select
+                  className={inputClass}
+                  value={manualData.status}
+                  disabled={isEditMode}
+                  onChange={(e) => setManualData({ ...manualData, status: e.target.value as "student" | "teacher" })}
+                >
+                  {ROLE_OPTIONS.map((r) => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
+                </select>
+                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs">▼</span>
+              </div>
             </div>
 
             <div className="space-y-1.5">
@@ -136,17 +182,23 @@ export default function MemberFormModal({ onClose, onImport, onUpdate, initialDa
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold uppercase text-slate-500">Kelas</label>
-                <select className={inputClass} value={manualData.class} onChange={(e) => setManualData({ ...manualData, class: e.target.value })}>
-                  <option value="">Pilih Kelas</option>
-                  {KELAS_LIST.map((k) => <option key={k} value={k}>{k}</option>)}
-                </select>
+                <div className="relative">
+                  <select className={inputClass} value={manualData.class} onChange={(e) => setManualData({ ...manualData, class: e.target.value })}>
+                    <option value="">Pilih Kelas</option>
+                    {KELAS_LIST.map((k) => <option key={k} value={k}>{k}</option>)}
+                  </select>
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs">▼</span>
+                </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-bold uppercase text-slate-500">Jurusan</label>
-                <select className={inputClass} value={manualData.major} onChange={(e) => setManualData({ ...manualData, major: e.target.value })}>
-                  <option value="">Pilih Jurusan</option>
-                  {JURUSAN_LIST.map((j) => <option key={j} value={j}>{j}</option>)}
-                </select>
+                <div className="relative">
+                  <select className={inputClass} value={manualData.major} onChange={(e) => setManualData({ ...manualData, major: e.target.value })}>
+                    <option value="">Pilih Jurusan</option>
+                    {JURUSAN_LIST.map((j) => <option key={j} value={j}>{j}</option>)}
+                  </select>
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs">▼</span>
+                </div>
               </div>
             </div>
 

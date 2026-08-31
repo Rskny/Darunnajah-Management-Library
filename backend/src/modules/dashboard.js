@@ -3,31 +3,74 @@ const router = express.Router();
 const db = require('../db');
 const authenticateToken = require('../authMiddleware');
 
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+const STATUS_BORROWED = 'Dipinjam';
+
+const toDateString = (date) => date.toISOString().split('T')[0];
+
+const parseCount = (result) => Number(result[0]?.count) || 0;
+
+const buildMonthlyVisits = (visits) => {
+    const monthly = MONTH_LABELS.map((month) => ({ month, visits: 0 }));
+
+    for (const { date } of visits) {
+        if (!date) continue;
+
+        const parsedDate = new Date(date);
+        if (!isNaN(parsedDate.getTime())) {
+            monthly[parsedDate.getMonth()].visits++;
+        }
+    }
+
+    return monthly;
+};
+
+const fetchTopList = async (table, nameColumn, limit = 3) => {
+    try {
+        const rows = await db(table)
+            .select(nameColumn)
+            .count('* as count')
+            .groupBy(nameColumn)
+            .orderBy('count', 'desc')
+            .limit(limit);
+
+        return rows.map((row) => ({
+            name: row[nameColumn],
+            count: Number(row.count),
+            subText: 'Member of Library',
+        }));
+    } catch (error) {
+        console.warn(`Gagal mengambil top list dari ${table}:`, error.message);
+        return [];
+    }
+};
+
 /**
  * @swagger
  * paths:
- *  /api/dashboard:
- *   get:
- *    summary: Mendapatkan data ringkasan dashboard
- *    tags:
- *     - Dashboard
- *    security:
- *     - bearerAuth: []
- *    responses:
- *     200:
- *      description: Berhasil mendapatkan data ringkasan
- *      content:
- *       application/json:
- *        schema:
- *         type: object
- *         example:
- *          stats:
- *           weeklyVisits: 0
- *           activeLoans: 0
- *           overdueCount: 0
- *           totalBooks: 0
- *          monthlyData: []
- *          topLists: {}
+ *   /api/dashboard:
+ *     get:
+ *       summary: Mendapatkan data ringkasan dashboard
+ *       tags:
+ *         - Dashboard
+ *       security:
+ *         - bearerAuth: []
+ *       responses:
+ *         200:
+ *           description: Berhasil mendapatkan data ringkasan
+ *           content:
+ *             application/json:
+ *               schema:
+ *                 type: object
+ *                 example:
+ *                   stats:
+ *                     weeklyVisits: 0
+ *                     activeLoans: 0
+ *                     overdueCount: 0
+ *                     totalBooks: 0
+ *                     totalMembers: 0
+ *                   monthlyData: []
+ *                   topLists: {}
  */
 router.get('/', authenticateToken, async (req, res) => {
     try {
@@ -35,103 +78,52 @@ router.get('/', authenticateToken, async (req, res) => {
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-        // 1. Weekly Visits
-        const weeklyVisitsResult = await db('visits')
-            .count('* as count')
-            .where('date', '>=', oneWeekAgo.toISOString().split('T')[0]);
-        const weeklyVisits = weeklyVisitsResult[0].count;
+        const todayStr = toDateString(today);
+        const oneWeekAgoStr = toDateString(oneWeekAgo);
 
-        // 2. Active Loans (status = Dipinjam)
-        const activeLoansResult = await db('transactions')
-            .count('* as count')
-            .where('status', 'Dipinjam');
-        const activeLoans = activeLoansResult[0].count;
+        const [
+            weeklyVisits,
+            activeLoans,
+            overdueCount,
+            totalBooks,
+            totalMembers,
+            visits,
+            topVisitors,
+            topBorrowers,
+        ] = await Promise.all([
+            db('visits').count('* as count').where('date', '>=', oneWeekAgoStr).then(parseCount),
+            db('transactions').count('* as count').where('status', STATUS_BORROWED).then(parseCount),
+            db('transactions')
+                .count('* as count')
+                .where('status', STATUS_BORROWED)
+                .andWhere('dueDate', '<', todayStr)
+                .then(parseCount),
+            db('books').count('* as count').then(parseCount),
+            db('members').count('* as count').then(parseCount),
+            db('visits').select('date'),
+            fetchTopList('visits', 'name'),
+            fetchTopList('transactions', 'studentName'),
+        ]);
 
-        // 3. Overdue Count (status = Dipinjam & dueDate < today)
-        const overdueCountResult = await db('transactions')
-            .count('* as count')
-            .where('status', 'Dipinjam')
-            .andWhere('dueDate', '<', today.toISOString().split('T')[0]);
-        const overdueCount = overdueCountResult[0].count;
-
-        // 4. Total Books
-        const totalBooksResult = await db('books').count('* as count');
-        const totalBooks = totalBooksResult[0].count;
-
-        // 5. Monthly Visits (12 months array)
-        const visits = await db('visits').select('date');
-
-        const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-        const monthly = months.map(m => ({ month: m, visits: 0 }));
-
-        visits.forEach((v) => {
-            if (v.date) {
-                const d = new Date(v.date);
-                if (!isNaN(d.getTime())) {
-                    monthly[d.getMonth()].visits++;
-                }
-            }
-        });
-
-       // ==================== DAFTAR TOP LIST ====================
-let topVisitors = [];
-let topBorrowers = [];
-
-// 6. Ambil Top 3 Pengunjung Teraktif
-try {
-    const rawVisitors = await db('visits')
-        .select('name')
-        .count('* as count')
-        .groupBy('name')
-        .orderBy('count', 'desc')
-        .limit(3);
-
-    topVisitors = rawVisitors.map(v => ({
-        name: v.name,
-        count: Number(v.count),
-        subText: 'Member of Library'
-    }));
-} catch (visError) {
-    console.log('💡 Note Top Visitors:', visError.message);
-}
-
-// 7. Ambil Top 3 Peminjam Buku Terbanyak
-try {
-    const rawBorrowers = await db('transactions')
-        .select('studentName')
-        .count('* as count')
-        .groupBy('studentName')
-        .orderBy('count', 'desc')
-        .limit(3);
-
-    topBorrowers = rawBorrowers.map(b => ({
-        name: b.studentName,
-        count: Number(b.count),
-        subText: 'Member of Library'
-    }));
-} catch (borError) {
-    console.log('💡 Note Top Borrowers:', borError.message);
-}
-
-console.log('TOP VISITORS:', topVisitors);
-console.log('TOP BORROWERS:', topBorrowers);
-// ====================================================================================
-        // Kirim semua response ke frontend
         res.json({
             stats: {
-                weeklyVisits: Number(weeklyVisits) || 0,
-                activeLoans: Number(activeLoans) || 0,
-                overdueCount: Number(overdueCount) || 0,
-                totalBooks: Number(totalBooks) || 0,
+                weeklyVisits,
+                activeLoans,
+                overdueCount,
+                totalBooks,
+                totalMembers,
             },
-            monthlyData: monthly,
-            topLists: {              
+            monthlyData: buildMonthlyVisits(visits),
+            topLists: {
                 visitors: topVisitors,
-                borrowers: topBorrowers
-            }
+                borrowers: topBorrowers,
+            },
         });
     } catch (error) {
-        res.status(500).json({ error: 'Gagal mendapatkan data dashboard', detail: error.message });
+        res.status(500).json({
+            error: 'Gagal mendapatkan data dashboard',
+            detail: error.message,
+        });
     }
 });
 

@@ -2,18 +2,28 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const authenticateToken = require('../authMiddleware');
- 
+
+// 🔁 UBAH: getNextMemberId sekarang menghasilkan ID dengan angka minimal 6 digit (padding nol di depan)
 async function getNextMemberId(status) {
     const prefix = status.toLowerCase() === 'teacher' ? 'T' : 'S';
     const lastMember = await db('members')
         .where('id', 'like', `${prefix}%`)
         .orderBy('id', 'desc')
         .first();
-    if (!lastMember) return `${prefix}1000`;
-    const lastNumber = parseInt(lastMember.id.substring(1), 10);
-    return `${prefix}${lastNumber + 1}`;
+
+    let nextNumber = 1;
+    if (lastMember) {
+        const lastNumber = parseInt(lastMember.id.substring(1), 10);
+        nextNumber = lastNumber + 1;
+    }
+
+    // padStart(6, '0') memastikan minimal 6 digit angka, contoh: 1 -> "000001"
+    // Kalau angkanya sudah lebih dari 6 digit (misal 1000000), padStart tidak akan memotongnya
+    const paddedNumber = String(nextNumber).padStart(6, '0');
+    return `${prefix}${paddedNumber}`;
 }
- 
+// 🔼 UBAH
+
 /**
  * @swagger
  * components:
@@ -23,7 +33,7 @@ async function getNextMemberId(status) {
  *       properties:
  *         id:
  *           type: string
- *           example: S1001
+ *           example: S000001
  *         nama:
  *           type: string
  *           example: Budi Santoso
@@ -76,9 +86,9 @@ async function getNextMemberId(status) {
  *       properties:
  *         nextId:
  *           type: string
- *           example: S1042
+ *           example: S000042
  */
- 
+
 /**
  * @swagger
  * /api/members/next-id:
@@ -115,7 +125,7 @@ router.get('/next-id', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Gagal membuat urutan ID baru', detail: error.message });
     }
 });
- 
+
 /**
  * @swagger
  * /api/members:
@@ -144,7 +154,7 @@ router.get('/', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Gagal mendapatkan data anggota', detail: error.message });
     }
 });
- 
+
 /**
  * @swagger
  * /api/members:
@@ -171,7 +181,7 @@ router.get('/', authenticateToken, async (req, res) => {
  *                   type: string
  *                 id:
  *                   type: string
- *                   example: S1042
+ *                   example: S000042
  *       400:
  *         description: Nama dan Status wajib diisi
  *       500:
@@ -188,7 +198,7 @@ router.post('/', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Gagal menambah anggota', detail: error.message });
     }
 });
- 
+
 /**
  * @swagger
  * /api/members/{id}:
@@ -205,7 +215,7 @@ router.post('/', authenticateToken, async (req, res) => {
  *         schema:
  *           type: string
  *         description: ID anggota yang ingin diupdate
- *         example: S1001
+ *         example: S000001
  *     requestBody:
  *       required: true
  *       content:
@@ -232,17 +242,17 @@ router.put('/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { nama, kelas, jurusan, gender } = req.body;
- 
+
         const member = await db('members').where({ id }).first();
         if (!member) return res.status(404).json({ error: 'Anggota tidak ditemukan' });
- 
+
         await db('members').where({ id }).update({ nama, kelas, jurusan, gender });
         res.json({ message: 'Anggota berhasil diperbarui' });
     } catch (error) {
         res.status(500).json({ error: 'Gagal memperbarui anggota', detail: error.message });
     }
 });
- 
+
 /**
  * @swagger
  * /api/members/{id}:
@@ -258,7 +268,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
  *         schema:
  *           type: string
  *         description: ID anggota yang akan dihapus
- *         example: S1001
+ *         example: S000001
  *     responses:
  *       200:
  *         description: Anggota berhasil dihapus
@@ -278,7 +288,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Gagal menghapus anggota', detail: error.message });
     }
 });
- 
+
 /**
  * @swagger
  * /api/members/selection:
@@ -320,5 +330,5 @@ router.get('/selection', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Gagal mengambil list seleksi anggota', detail: error.message });
     }
 });
- 
+
 module.exports = router;

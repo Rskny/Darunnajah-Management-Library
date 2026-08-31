@@ -66,7 +66,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-8 space-y-8 overflow-x-hidden">
-      {/* STATS OVERVIEW */}
+      {/* STATS OVERVIEW WITH TOTAL MEMBERS CARD */}
       <div>
         <StatsOverview stats={stats} />
       </div>
